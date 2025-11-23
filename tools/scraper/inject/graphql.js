@@ -105,7 +105,6 @@ function parseOutputSchema(nodes) {
                 schema[node.name] = {
                     type: node.plural ? "array" : "object",
                     [node.plural ? "items" : "properties"]: parseOutputSchema(node.selections),
-                    required: false,
                 };
                 break;
 
@@ -114,7 +113,6 @@ function parseOutputSchema(nodes) {
 
                 schema[node.name] = {
                     type: "scalar",
-                    required: false,
                 };
                 break;
 
