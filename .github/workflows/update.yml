@@ -62,11 +62,11 @@ jobs:
       - name: Check if package update is needed
         run: |
           if [[ "${{ env.ARTIFACTS_HASH }}" == "${{ env.NEWEST_ARTIFACTS_HASH }}" ]]; then
-            echo "No update needed - artifacts hash is the same."
+            echo "No update needed, artifacts hash is the same."
           elif [[ "${{ env.VERSION }}" == "${{ env.NEWEST_VERSION }}" ]]; then
-            echo "Cannot update - version is the same but artifacts differ. Need new WhatsApp Web version."
+            echo "Cannot update, version is the same but artifacts differ. Need new WhatsApp Web version."
           else
-            echo "Update needed - both version and artifacts are different."
+            echo "Update needed, both version and artifacts are different."
             echo "package_update_needed=true" >> $GITHUB_ENV
           fi
 
