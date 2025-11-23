@@ -82,8 +82,8 @@ compile_ts() {
 
     echo "TypeScript compilation completed"
 
-    # echo "Removing TypeScript source files..."
-    # rm $tsFiles
+    echo "Removing TypeScript source files..."
+    rm $tsFiles
 }
 
 generate_graphql() {
