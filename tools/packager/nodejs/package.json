@@ -13,6 +13,10 @@
     "./proto/*": {
       "types": "./proto/*_pb.d.ts",
       "default": "./proto/*_pb.js"
+    },
+    "./graphql": {
+      "types": "./graphql/index.d.ts",
+      "default": "./graphql/index.js"
     }
   },
   "engines": {
