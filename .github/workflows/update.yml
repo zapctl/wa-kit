@@ -2,7 +2,7 @@ name: Check for updates
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "0 */3 * * *"
   workflow_dispatch:
 
 jobs:
@@ -71,25 +71,25 @@ jobs:
           fi
 
       - name: Install packager dependencies
-        if: env.package_update_needed == 'true'
+        if: env.package_update_needed == 'true' || github.ref != 'refs/heads/main'
         run: |
           sudo apt-get update
           sudo apt-get install -y protobuf-compiler
 
       - name: Generate packages
-        if: env.package_update_needed == 'true'
+        if: env.package_update_needed == 'true' || github.ref != 'refs/heads/main'
         run: bash generate.sh
         working-directory: tools/packager
         env:
           OUT_DIR: ${{ github.workspace }}/out
 
       - name: Upload artifacts
-        if: env.package_update_needed == 'true'
+        if: env.package_update_needed == 'true' || github.ref != 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: out
           path: |
-            out/dist
+            out
             !node_modules
 
       - name: Publish packages
@@ -101,7 +101,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Commit changes
-        if: env.package_update_needed == 'true'
+        if: env.package_update_needed == 'true' && github.ref == 'refs/heads/main'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "WhatsApp Web v${{ env.NEWEST_VERSION }}"
