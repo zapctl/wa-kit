@@ -194,4 +194,4 @@ generate_binary
 generate_message
 compile_proto
 compile_ts
-# minify
+minify

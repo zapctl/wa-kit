@@ -35,7 +35,7 @@ jobs:
           echo "CHECKSUM=${CHECKSUM}" >> $GITHUB_ENV
 
           echo "Current WhatsApp Web version: ${VERSION:-none}"
-          echo "Current artifacts SHA256 checksum: ${CHECKSUM:-none}"
+          echo "Current artifacts sha256 checksum: ${CHECKSUM:-none}"
 
       - name: Install scraper dependencies
         run: |
@@ -53,7 +53,7 @@ jobs:
           echo "NEWEST_CHECKSUM=$NEWEST_CHECKSUM" >> $GITHUB_ENV
 
           echo "Newest WhatsApp Web version: $NEWEST_VERSION"
-          echo "Newest artifacts SHA256 checksum: $NEWEST_CHECKSUM"
+          echo "Newest artifacts sha256 checksum: $NEWEST_CHECKSUM"
 
       - name: Check if package update is needed
         run: |
