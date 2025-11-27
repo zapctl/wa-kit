@@ -1,22 +1,8 @@
-import {
-	JID,
-	JID_AD,
-	JID_FB,
-	JID_INTEROP,
-	JID_PAIR
-} from "../jid";
+import { JID, JID_AD, JID_FB, JID_INTEROP, JID_PAIR } from "../jid";
 import { BytesToString, DecompressZLib } from "../utils";
-import {
-	DICTIONARY_0_TOKEN,
-	DICTIONARY_1_TOKEN,
-	DICTIONARY_2_TOKEN,
-	DICTIONARY_3_TOKEN,
-	HEX_TOKEN,
-	NIBBLE_TOKEN,
-	SINGLE_BYTE_TOKEN,
-	TAGS,
-	// @ts-ignore
-} from "./constants";
+// @ts-ignore
+import { SINGLE_BYTE_TOKEN, DICTIONARY_0_TOKEN, DICTIONARY_1_TOKEN, DICTIONARY_2_TOKEN, DICTIONARY_3_TOKEN } from "./constants";
+import { HEX_TOKEN, NIBBLE_TOKEN, BinaryTags } from "./constants";
 import { XMLNode, XMLNodeChildren } from "./node";
 
 export function decodeFromBinary(buffer: Uint8Array): XMLNode {
@@ -97,54 +83,54 @@ export function decodeFromBinary(buffer: Uint8Array): XMLNode {
 		}
 
 		switch (tag) {
-		case TAGS.LIST_EMPTY:
-			return [];
-		case TAGS.LIST_8:
-			return readList(readInt(1));
-		case TAGS.LIST_16:
-			return readList(readInt(2));
-		case TAGS.DICTIONARY_0:
-			return DICTIONARY_0_TOKEN[readInt(1)];
-		case TAGS.DICTIONARY_1:
-			return DICTIONARY_1_TOKEN[readInt(1)];
-		case TAGS.DICTIONARY_2:
-			return DICTIONARY_2_TOKEN[readInt(1)];
-		case TAGS.DICTIONARY_3:
-			return DICTIONARY_3_TOKEN[readInt(1)];
-		case TAGS.BINARY_8:
-			return readBytes(readInt(1));
-		case TAGS.BINARY_20:
-			return readBytes(readInt(3));
-		case TAGS.BINARY_32:
-			return readBytes(readInt(4));
-		case TAGS.JID_PAIR:
-			return new JID_PAIR({
-				user: readString(),
-				server: readString(),
-			});
-		case TAGS.JID_AD:
-			return new JID_AD({
-				server: readInt(1),
-				device: readInt(1),
-				user: readString(),
-			});
-		case TAGS.JID_FB:
-			return new JID_FB({
-				user: readString(),
-				device: readInt(2),
-			});
-		case TAGS.JID_INTEROP:
-			return new JID_INTEROP({
-				user: readString(),
-				device: readInt(2),
-				integrator: readInt(2),
-			});
-		case TAGS.HEX_8:
-			return readHex8()
-		case TAGS.NIBBLE_8:
-			return readNibble8();
-		default:
-			throw new Error(`invalid string with tag: ${tag}`);
+			case BinaryTags.ListEmpty:
+				return [];
+			case BinaryTags.List8:
+				return readList(readInt(1));
+			case BinaryTags.List16:
+				return readList(readInt(2));
+			case BinaryTags.Dictionary0:
+				return DICTIONARY_0_TOKEN[readInt(1)];
+			case BinaryTags.Dictionary1:
+				return DICTIONARY_1_TOKEN[readInt(1)];
+			case BinaryTags.Dictionary2:
+				return DICTIONARY_2_TOKEN[readInt(1)];
+			case BinaryTags.Dictionary3:
+				return DICTIONARY_3_TOKEN[readInt(1)];
+			case BinaryTags.Binary8:
+				return readBytes(readInt(1));
+			case BinaryTags.Binary20:
+				return readBytes(readInt(3));
+			case BinaryTags.Binary32:
+				return readBytes(readInt(4));
+			case BinaryTags.JidPair:
+				return new JID_PAIR({
+					user: readString(),
+					server: readString(),
+				});
+			case BinaryTags.JidAd:
+				return new JID_AD({
+					server: readInt(1),
+					device: readInt(1),
+					user: readString(),
+				});
+			case BinaryTags.JidFb:
+				return new JID_FB({
+					user: readString(),
+					device: readInt(2),
+				});
+			case BinaryTags.JidInterop:
+				return new JID_INTEROP({
+					user: readString(),
+					device: readInt(2),
+					integrator: readInt(2),
+				});
+			case BinaryTags.Hex8:
+				return readHex8()
+			case BinaryTags.Nibble8:
+				return readNibble8();
+			default:
+				throw new Error(`invalid string with tag: ${tag}`);
 		}
 	}
 
@@ -162,14 +148,14 @@ export function decodeFromBinary(buffer: Uint8Array): XMLNode {
 		const tag = readInt(1);
 
 		switch (tag) {
-		case TAGS.LIST_EMPTY:
-			return 0;
-		case TAGS.LIST_8:
-			return readInt(1);
-		case TAGS.LIST_16:
-			return readInt(2);
-		default:
-			throw new Error(`invalid tag for list size: ${tag}`);
+			case BinaryTags.ListEmpty:
+				return 0;
+			case BinaryTags.List8:
+				return readInt(1);
+			case BinaryTags.List16:
+				return readInt(2);
+			default:
+				throw new Error(`invalid tag for list size: ${tag}`);
 		}
 	}
 

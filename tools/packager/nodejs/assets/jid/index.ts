@@ -5,7 +5,7 @@ import {
 	LID_SUFFIX,
 	MSGR_USER_JID_SUFFIX,
 	USER_JID_SUFFIX,
-	JID_DOMAIN,
+	JidDomain,
 	// @ts-ignore
 } from "./constants";
 
@@ -15,7 +15,7 @@ export interface JidOptions {
 	user?: string;
 	device?: number;
 	integrator?: number;
-	server?: string | JID_DOMAIN;
+	server?: string | JidDomain;
 }
 
 export class JID {
@@ -44,26 +44,26 @@ export class JID {
 		}
 	}
 
-	get domain(): JID_DOMAIN | undefined {
+	get domain(): JidDomain | undefined {
 		return {
-			[USER_JID_SUFFIX]: JID_DOMAIN.WHATSAPP,
-			[LID_SUFFIX]: JID_DOMAIN.LID,
-			[HOSTED_SUFFIX]: JID_DOMAIN.HOSTED,
-			[HOSTED_LID_SUFFIX]: JID_DOMAIN.HOSTED_LID,
+			[USER_JID_SUFFIX]: JidDomain.WhatsApp,
+			[LID_SUFFIX]: JidDomain.Lid,
+			[HOSTED_SUFFIX]: JidDomain.Hosted,
+			[HOSTED_LID_SUFFIX]: JidDomain.HostedLid,
 		}[this.server];
 	}
 
-	set domain(domain: JID_DOMAIN | undefined) {
+	set domain(domain: JidDomain | undefined) {
 		if (!domain) {
 			this.server = "";
 			return;
 		}
 
 		this.server = {
-			[JID_DOMAIN.WHATSAPP]: USER_JID_SUFFIX,
-			[JID_DOMAIN.LID]: LID_SUFFIX,
-			[JID_DOMAIN.HOSTED]: HOSTED_SUFFIX,
-			[JID_DOMAIN.HOSTED_LID]: HOSTED_LID_SUFFIX,
+			[JidDomain.WhatsApp]: USER_JID_SUFFIX,
+			[JidDomain.Lid]: LID_SUFFIX,
+			[JidDomain.Hosted]: HOSTED_SUFFIX,
+			[JidDomain.HostedLid]: HOSTED_LID_SUFFIX,
 		}[domain] ?? "";
 	}
 
@@ -112,7 +112,7 @@ export class JID_PAIR extends JID {
 export interface JidAdOptions {
 	user?: string;
 	device?: number;
-	server?: JID_DOMAIN | string;
+	server?: JidDomain | string;
 }
 
 export class JID_AD extends JID {
@@ -136,7 +136,7 @@ export class JID_AD extends JID {
 export interface JidFBOptions {
 	user?: string;
 	device?: number;
-	server?: JID_DOMAIN | string;
+	server?: JidDomain | string;
 }
 
 export class JID_FB extends JID {
@@ -156,7 +156,7 @@ export interface JidInteropOptions {
 	user?: string;
 	device?: number;
 	integrator?: number;
-	server?: JID_DOMAIN | string;
+	server?: JidDomain | string;
 }
 
 export class JID_INTEROP extends JID {

@@ -1,23 +1,8 @@
-
-
-import {
-	JID,
-	JID_AD,
-	JID_FB,
-	JID_INTEROP,
-} from "../jid";
+import { JID, JID_AD, JID_FB, JID_INTEROP } from "../jid";
 import { BytesToHex, StringToBytes } from "../utils";
-import {
-	DICTIONARY_0_TOKEN,
-	DICTIONARY_1_TOKEN,
-	DICTIONARY_2_TOKEN,
-	DICTIONARY_3_TOKEN,
-	HEX_TOKEN,
-	NIBBLE_TOKEN,
-	SINGLE_BYTE_TOKEN,
-	TAGS,
-	// @ts-ignore
-} from "./constants";
+// @ts-ignore
+import { DICTIONARY_0_TOKEN, DICTIONARY_1_TOKEN, DICTIONARY_2_TOKEN, DICTIONARY_3_TOKEN, SINGLE_BYTE_TOKEN } from "./constants";
+import { HEX_TOKEN, NIBBLE_TOKEN, BinaryTags } from "./constants";
 import { XMLNode } from "./node";
 
 function isNibble8(str: string): boolean {
@@ -41,17 +26,17 @@ export function encodeToBinary(node: XMLNode) {
 		const size = bytes.byteLength;
 
 		if (size === 0) {
-			writeByte(TAGS.LIST_EMPTY);
+			writeByte(BinaryTags.ListEmpty);
 		} else if (size >= Math.pow(2, 32)) {
 			throw new Error(`Bytes too large to encode: ${size} bytes`);
 		} else if (size >= (1 << 20)) {
-			writeByte(TAGS.BINARY_32);
+			writeByte(BinaryTags.Binary32);
 			writeInt(size, 4);
 		} else if (size >= 256) {
-			writeByte(TAGS.BINARY_20);
+			writeByte(BinaryTags.Binary20);
 			writeInt(size, 3);
 		} else {
-			writeByte(TAGS.BINARY_8);
+			writeByte(BinaryTags.Binary8);
 			writeByte(size);
 		}
 
@@ -72,7 +57,7 @@ export function encodeToBinary(node: XMLNode) {
 		let roundedLength = Math.ceil(str.length / 2);
 		if (str.length % 2 !== 0) roundedLength |= 128;
 
-		writeByte(TAGS.NIBBLE_8);
+		writeByte(BinaryTags.Nibble8);
 		writeByte(roundedLength);
 
 		for (let i = 0; i < str.length; i += 2) {
@@ -87,7 +72,7 @@ export function encodeToBinary(node: XMLNode) {
 		let roundedLength = Math.ceil(str.length / 2);
 		if (str.length % 2 !== 0) roundedLength |= 128;
 
-		writeByte(TAGS.HEX_8);
+		writeByte(BinaryTags.Hex8);
 		writeByte(roundedLength);
 
 		for (let i = 0; i < str.length; i += 2) {
@@ -103,19 +88,19 @@ export function encodeToBinary(node: XMLNode) {
 			writeByte(SINGLE_BYTE_TOKEN.indexOf(str) + 1);
 
 		} else if (DICTIONARY_0_TOKEN.includes(str)) {
-			writeByte(TAGS.DICTIONARY_0);
+			writeByte(BinaryTags.Dictionary0);
 			writeByte(DICTIONARY_0_TOKEN.indexOf(str));
 
 		} else if (DICTIONARY_1_TOKEN.includes(str)) {
-			writeByte(TAGS.DICTIONARY_1);
+			writeByte(BinaryTags.Dictionary1);
 			writeByte(DICTIONARY_1_TOKEN.indexOf(str));
 
 		} else if (DICTIONARY_2_TOKEN.includes(str)) {
-			writeByte(TAGS.DICTIONARY_2);
+			writeByte(BinaryTags.Dictionary2);
 			writeByte(DICTIONARY_2_TOKEN.indexOf(str));
 
 		} else if (DICTIONARY_3_TOKEN.includes(str)) {
-			writeByte(TAGS.DICTIONARY_3);
+			writeByte(BinaryTags.Dictionary3);
 			writeByte(DICTIONARY_3_TOKEN.indexOf(str));
 
 		} else {
@@ -125,21 +110,21 @@ export function encodeToBinary(node: XMLNode) {
 
 	function writeJID(jid: JID) {
 		if (jid instanceof JID_AD) {
-			writeByte(TAGS.JID_AD);
+			writeByte(BinaryTags.JidAd);
 			writeByte(jid.domain || 0);
 			writeInt(jid.device || 0, 1);
 			writeString(jid.user);
 		} else if (jid instanceof JID_FB) {
-			writeByte(TAGS.JID_FB);
+			writeByte(BinaryTags.JidFb);
 			writeString(jid.user);
 			writeInt(jid.device, 2);
 		} else if (jid instanceof JID_INTEROP) {
-			writeByte(TAGS.JID_INTEROP);
+			writeByte(BinaryTags.JidInterop);
 			writeString(jid.user);
 			writeInt(jid.device, 2);
 			writeInt(jid.integrator, 2);
 		} else if (jid instanceof JID) {
-			writeByte(TAGS.JID_PAIR);
+			writeByte(BinaryTags.JidPair);
 			writeString(jid.user || "");
 			writeString(jid.server);
 		}
@@ -147,12 +132,12 @@ export function encodeToBinary(node: XMLNode) {
 
 	function writeListSize(size: number) {
 		if (size === 0) {
-			writeByte(TAGS.LIST_EMPTY);
+			writeByte(BinaryTags.ListEmpty);
 		} else if (size < 256) {
-			writeByte(TAGS.LIST_8);
+			writeByte(BinaryTags.List8);
 			writeByte(size);
 		} else {
-			writeByte(TAGS.LIST_16);
+			writeByte(BinaryTags.List16);
 			writeInt(size, 2);
 		}
 	}

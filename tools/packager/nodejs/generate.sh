@@ -2,6 +2,8 @@
 
 PROTO_DIR=$OUT_DIR/protobuf
 GRAPHQL_DIR=$OUT_DIR/graphql
+VERSION_PATH=$OUT_DIR/version.json
+MAIN_PATH=$OUT_DIR/main.json
 JID_PATH=$OUT_DIR/jid.json
 BINARY_PATH=$OUT_DIR/binary.json
 MESSAGE_PATH=$OUT_DIR/message.json
@@ -29,12 +31,6 @@ copy_assets() {
     
     cp -r assets/* $OUT/
     
-    {
-        echo "export const VERSION = '$NEWEST_VERSION';"
-        echo "export const BUILD_HASH = '$NEWEST_BUILD_HASH';"
-        cat $OUT/index.ts
-    } > $OUT/index.ts.tmp && mv $OUT/index.ts.tmp $OUT/index.ts
-
     echo "Assets copied"
 }
 
@@ -50,52 +46,20 @@ generate_package() {
     echo "Package file generated"
 }
 
-compile_proto() {
-    echo "Compiling proto files..."
-    mkdir $PROTO_OUT
+generate_main() {
+    echo "Generating main constants TypeScript definitions..."
     
-    pids=()
-    
-    for protoFile in $PROTO_DIR/*.proto; do
-        (
-            protoc \
-            --es_out $PROTO_OUT \
-            --es_opt target=ts \
-            --proto_path $PROTO_DIR \
-            "$protoFile"
-        ) &
-        pids+=($!)
-    done
-    
-    for pid in "${pids[@]}"; do
-        wait $pid || {
-            echo "Error: protoc compilation failed"
-            exit 1
-        }
-    done
-    
-    echo "Proto compilation completed"
-}
-
-compile_ts() {
-    echo "Compiling TypeScript files..."
-    
-    tsFiles=$(find $OUT -type f -name "*.ts")
-    
-    tsc $tsFiles \
-    --declaration \
-    --module commonjs \
-    --target es2022 \
-    --outdir $OUT \
-    || {
-        echo "Error: TypeScript compilation failed"
+    node $(dirname "$0")/scripts/generate.js "$VERSION_PATH" "$OUT/index.ts" || {
+        echo "Error: main constants generation failed"
         exit 1
     }
     
-    echo "TypeScript compilation completed"
+    node $(dirname "$0")/scripts/generate.js "$MAIN_PATH" "$OUT/index.ts" || {
+        echo "Error: main constants generation failed"
+        exit 1
+    }
     
-    echo "Removing TypeScript source files..."
-    rm $tsFiles
+    echo "Main constants generation completed"
 }
 
 generate_graphql() {
@@ -146,6 +110,54 @@ generate_message() {
     echo "Message constants generation completed"
 }
 
+compile_proto() {
+    echo "Compiling proto files..."
+    mkdir $PROTO_OUT
+    
+    pids=()
+    
+    for protoFile in $PROTO_DIR/*.proto; do
+        (
+            protoc \
+            --es_out $PROTO_OUT \
+            --es_opt target=ts \
+            --proto_path $PROTO_DIR \
+            "$protoFile"
+        ) &
+        pids+=($!)
+    done
+    
+    for pid in "${pids[@]}"; do
+        wait $pid || {
+            echo "Error: protoc compilation failed"
+            exit 1
+        }
+    done
+    
+    echo "Proto compilation completed"
+}
+
+compile_ts() {
+    echo "Compiling TypeScript files..."
+    
+    tsFiles=$(find $OUT -type f -name "*.ts")
+    
+    tsc $tsFiles \
+    --declaration \
+    --module commonjs \
+    --target es2022 \
+    --outdir $OUT \
+    || {
+        echo "Error: TypeScript compilation failed"
+        exit 1
+    }
+    
+    echo "TypeScript compilation completed"
+    
+    echo "Removing TypeScript source files..."
+    rm $tsFiles
+}
+
 minify() {
     echo "Minifying JavaScript files..."
     
@@ -175,10 +187,11 @@ set -e
 setup
 copy_assets
 generate_package
-compile_proto
+generate_main
 generate_graphql
 generate_jid
 generate_binary
 generate_message
-# compile_ts
+compile_proto
+compile_ts
 # minify

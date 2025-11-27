@@ -28,14 +28,14 @@ jobs:
         run: |
           mkdir -p out/packages
 
-          [ -r out/.version ] && VERSION=$(cat out/.version)
-          [ -r out/.md5 ] && ARTIFACTS_HASH=$(cat out/.md5)
+          [ -r out/.version] && VERSION=$(cat out/.version)
+          [ -r out/.checksum ] && CHECKSUM=$(cat out/.checksum)
 
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "ARTIFACTS_HASH=${ARTIFACTS_HASH}" >> $GITHUB_ENV
+          echo "CHECKSUM=${CHECKSUM}" >> $GITHUB_ENV
 
           echo "Current WhatsApp Web version: ${VERSION:-none}"
-          echo "Current artifacts md5: ${ARTIFACTS_HASH:-none}"
+          echo "Current artifacts SHA256 checksum: ${CHECKSUM:-none}"
 
       - name: Install scraper dependencies
         run: |
@@ -47,21 +47,17 @@ jobs:
           node tools/scraper
 
           NEWEST_VERSION=$(cat out/.version)
-          NEWEST_ARTIFACTS_HASH=$(find out -type f ! -name '.*' -exec md5sum {} + | sort | md5sum | tr -d ' \n-')
-          NEWEST_BUILD_HASH=$(echo -n "$NEWEST_VERSION" | md5sum | cut -d' ' -f1)
-
-          echo $NEWEST_ARTIFACTS_HASH > out/.md5
+          NEWEST_CHECKSUM=$(cat out/.checksum)
 
           echo "NEWEST_VERSION=$NEWEST_VERSION" >> $GITHUB_ENV
-          echo "NEWEST_BUILD_HASH=$NEWEST_BUILD_HASH" >> $GITHUB_ENV
-          echo "NEWEST_ARTIFACTS_HASH=$NEWEST_ARTIFACTS_HASH" >> $GITHUB_ENV
+          echo "NEWEST_CHECKSUM=$NEWEST_CHECKSUM" >> $GITHUB_ENV
 
           echo "Newest WhatsApp Web version: $NEWEST_VERSION"
-          echo "Newest proto md5: $NEWEST_ARTIFACTS_HASH"
+          echo "Newest artifacts SHA256 checksum: $NEWEST_CHECKSUM"
 
       - name: Check if package update is needed
         run: |
-          if [[ "${{ env.ARTIFACTS_HASH }}" == "${{ env.NEWEST_ARTIFACTS_HASH }}" ]]; then
+          if [[ "${{ env.CHECKSUM }}" == "${{ env.NEWEST_CHECKSUM }}" ]]; then
             echo "No update needed, artifacts hash is the same."
           elif [[ "${{ env.VERSION }}" == "${{ env.NEWEST_VERSION }}" ]]; then
             echo "Cannot update, version is the same but artifacts differ. Need new WhatsApp Web version."

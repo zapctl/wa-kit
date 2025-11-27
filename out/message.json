@@ -1,37 +1,15 @@
 {
   "enums": {
-    "ENC_MEDIA_TYPE": {
-      "IMAGE": "image",
-      "VIDEO": "video",
-      "PTV": "ptv",
-      "AUDIO": "audio",
-      "PTT": "ptt",
-      "LOCATION": "location",
-      "V_CARD": "vcard",
-      "DOCUMENT": "document",
-      "URL": "url",
-      "CALL": "call",
-      "GIF": "gif",
-      "FUTURE": "future",
-      "CONTACT_ARRAY": "contact_array",
-      "LIVE_LOCATION": "livelocation",
-      "PROFILE_PIC": "profile_pic",
-      "STICKER": "sticker",
-      "STICKER_PACK": "sticker_pack",
-      "HSM": "hsm",
-      "PRODUCT_IMAGE": "product_image",
-      "TEMPLATE": "template",
-      "MD_APP_STATE": "md_app_state",
-      "MD_HISTORY_SYNC": "md_history_sync",
-      "LIST": "list",
-      "LIST_RESPONSE": "list_response",
-      "BUTTON": "button",
-      "BUTTON_RESPONSE": "button_response",
-      "ORDER": "order",
-      "PRODUCT": "product",
-      "NATIVE_FLOW_RESPONSE": "native_flow_response"
+    "STANZA_MSG_TYPES": {
+      "text": "text",
+      "media": "media",
+      "medianotify": "medianotify",
+      "pay": "pay",
+      "poll": "poll",
+      "reaction": "reaction",
+      "event": "event"
     },
-    "EDIT_TYPE": {
+    "EDIT_MSG_TYPE": {
       "NOT_EDITED": 0,
       "EDITED": 1,
       "SENDER_REVOKE": 2,
@@ -39,14 +17,36 @@
       "ADMIN_EDIT": 4,
       "PIN": 5
     },
-    "STANZA_MSG_TYPES": {
-      "TEXT": "text",
-      "MEDIA": "media",
-      "MEDIANOTIFY": "medianotify",
-      "PAY": "pay",
-      "POLL": "poll",
-      "REACTION": "reaction",
-      "EVENT": "event"
+    "ENC_MEDIA_TYPE": {
+      "Image": "image",
+      "Video": "video",
+      "Ptv": "ptv",
+      "Audio": "audio",
+      "Ptt": "ptt",
+      "Location": "location",
+      "VCard": "vcard",
+      "Document": "document",
+      "Url": "url",
+      "Call": "call",
+      "Gif": "gif",
+      "Future": "future",
+      "ContactArray": "contact_array",
+      "LiveLocation": "livelocation",
+      "ProfilePic": "profile_pic",
+      "Sticker": "sticker",
+      "StickerPack": "sticker_pack",
+      "Hsm": "hsm",
+      "ProductImage": "product_image",
+      "Template": "template",
+      "MdAppState": "md_app_state",
+      "MdHistorySync": "md_history_sync",
+      "List": "list",
+      "ListResponse": "list_response",
+      "Button": "button",
+      "ButtonResponse": "button_response",
+      "Order": "order",
+      "Product": "product",
+      "NativeFlowResponse": "native_flow_response"
     }
   }
 }

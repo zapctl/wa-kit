@@ -1,13 +1,6 @@
 const waJids = require("WAJids");
 const wapJid = require("WAWapJid");
 
-function makeEnumerable(obj) {
-    return Object.getOwnPropertyNames(obj).reduce((data, prop) => {
-        data[prop] = obj[prop];
-        return data;
-    }, {});
-}
-
 const specs = {
     constants: {
         AUTHOR_ME_JID: waJids.AUTHOR_ME,

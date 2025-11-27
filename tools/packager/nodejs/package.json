@@ -10,13 +10,25 @@
       "types": "./index.d.ts",
       "default": "./index.js"
     },
+    "./graphql": {
+      "types": "./graphql/index.d.ts",
+      "default": "./graphql/index.js"
+    },
     "./proto/*": {
       "types": "./proto/*_pb.d.ts",
       "default": "./proto/*_pb.js"
     },
-    "./graphql": {
-      "types": "./graphql/index.d.ts",
-      "default": "./graphql/index.js"
+    "./binary/*": {
+      "types": "./binary/*.d.ts",
+      "default": "./binary/*.js"
+    },
+    "./jid/*": {
+      "types": "./jid/*.d.ts",
+      "default": "./jid/*.js"
+    },
+    "./message/*": {
+      "types": "./message/*.d.ts",
+      "default": "./message/*.js"
     }
   },
   "engines": {

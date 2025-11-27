@@ -9,6 +9,19 @@ if (!inputJsonFile || !outputFile) {
 
 const specs = JSON.parse(fs.readFileSync(inputJsonFile, "utf8"));
 
+function toSnakeCase(value) {
+    return value.replace(/([a-z])(?=[A-Z])/g, '$1_').toUpperCase();
+}
+
+function toPascalCase(value) {
+    return toSnakeCase(value)
+        .toLowerCase()
+        .split("_")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join("")
+        .replace(/Whatsapp/g, "WhatsApp");
+}
+
 function serializeValue(value) {
     if (Array.isArray(value)) return `[${value.map(val => `"${val}"`).join(", ")}]`;
     else if (typeof value === "string") return `"${value}"`;
@@ -19,7 +32,10 @@ function generateConstants() {
     let output = "";
 
     for (const [name, value] of Object.entries(specs.constants || {})) {
-        output += `export const ${name} = ${serializeValue(value)};\n`;
+        const propName = toSnakeCase(name);
+        const propValue = serializeValue(value);
+
+        output += `export const ${propName} = ${propValue};\n`;
     }
 
     return output;
@@ -28,11 +44,15 @@ function generateConstants() {
 function generateEnums() {
     let output = "";
 
-    for (const [name, enumSpec] of Object.entries(specs.enums || {})) {
-        output += `export enum ${name} {\n`;
+    for (const [name, spec] of Object.entries(specs.enums || {})) {
+        const enumName = toPascalCase(name);
+        output += `export enum ${enumName} {\n`;
 
-        for (const [prop, value] of Object.entries(enumSpec)) {
-            output += `\t${prop} = ${serializeValue(value)},\n`;
+        for (const [prop, value] of Object.entries(spec)) {
+            const propName = toPascalCase(prop);
+            const propValue = serializeValue(value);
+
+            output += `\t${propName} = ${propValue},\n`;
         }
 
         output += "}\n\n";
@@ -41,7 +61,13 @@ function generateEnums() {
     return output;
 }
 
-let output = generateConstants() + "\n";
+let output = "";
+
+if (fs.existsSync(outputFile)) {
+    output += fs.readFileSync(outputFile, "utf8") + "\n\n";
+}
+
+output += generateConstants() + "\n";
 output += generateEnums();
 output = output.trim();
 
