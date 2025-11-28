@@ -1,0 +1,92 @@
+name: Publish on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+env:
+  PACKAGE_NAME: wa-kit
+
+jobs:
+  publish:
+    # Only run if the PR was merged (not just closed)
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'update/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main  # Checkout main branch (already includes merged changes)
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Extract version from branch name
+        id: version
+        run: |
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          VERSION=${BRANCH_NAME#update/v}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Extracted version: $VERSION"
+
+      - name: Verify package exists
+        run: |
+          if [ ! -d "out/dist/nodejs" ]; then
+            echo "Error: Package directory out/dist/nodejs not found"
+            echo "The package should have been built during PR creation"
+            exit 1
+          fi
+
+          if [ ! -f "out/dist/nodejs/package.json" ]; then
+            echo "Error: package.json not found in out/dist/nodejs"
+            exit 1
+          fi
+
+          echo "Package found, ready to publish"
+
+      - name: Update package.json to final version
+        run: |
+          cd out/dist/nodejs
+
+          # Replace preview version with final version in package.json
+          sed -i 's/"version": "'$VERSION'-preview\.[0-9]\+"/"version": "'$VERSION'"/' package.json
+
+          # Verify the change
+          echo "Updated package.json version:"
+          grep '"version"' package.json
+
+      - name: Publish to NPM with latest tag
+        run: bash publish.sh
+        working-directory: tools/packager
+        env:
+          DIST_DIR: ${{ github.workspace }}/out/dist
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Deprecate preview versions
+        run: bash .github/scripts/deprecate-preview.sh "${{ env.VERSION }}"
+        continue-on-error: true  # Don't fail if deprecation fails
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create Git tag
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "v${{ env.VERSION }}" -m "WhatsApp Web v${{ env.VERSION }}"
+          git push origin "v${{ env.VERSION }}"
+
+      - name: Summary
+        run: |
+          echo "✅ Successfully published ${{ env.PACKAGE_NAME }}@${{ env.VERSION }} to NPM with 'latest' tag"
+          echo "✅ Created git tag v${{ env.VERSION }}"
+          echo "✅ Deprecated preview versions"

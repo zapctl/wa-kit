@@ -5,16 +5,23 @@ on:
     - cron: "0 */3 * * *"
   workflow_dispatch:
 
+env:
+  PACKAGE_NAME: wa-kit
+
 jobs:
   update:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       id-token: write
+      pull-requests: write
+      checks: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for git log searches
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -28,8 +35,8 @@ jobs:
         run: |
           mkdir -p out/packages
 
-          [ -r out/.version] && VERSION=$(cat out/.version)
-          [ -r out/.checksum ] && CHECKSUM=$(cat out/.checksum)
+          [ -r out/.version ] && VERSION=$(cat out/.version) || VERSION=""
+          [ -r out/.checksum ] && CHECKSUM=$(cat out/.checksum) || CHECKSUM=""
 
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "CHECKSUM=${CHECKSUM}" >> $GITHUB_ENV
@@ -59,46 +66,99 @@ jobs:
         run: |
           if [[ "${{ env.CHECKSUM }}" == "${{ env.NEWEST_CHECKSUM }}" ]]; then
             echo "No update needed, artifacts hash is the same."
+            echo "package_update_needed=false" >> $GITHUB_ENV
           elif [[ "${{ env.VERSION }}" == "${{ env.NEWEST_VERSION }}" ]]; then
             echo "Cannot update, version is the same but artifacts differ. Need new WhatsApp Web version."
+            echo "package_update_needed=false" >> $GITHUB_ENV
           else
             echo "Update needed, both version and artifacts are different."
             echo "package_update_needed=true" >> $GITHUB_ENV
           fi
 
+      - name: Close old PRs
+        if: env.package_update_needed == 'true'
+        run: bash .github/scripts/close-old-prs.sh "${{ env.NEWEST_VERSION }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Get build number
+        if: env.package_update_needed == 'true'
+        id: build_number
+        run: |
+          OUTPUT=$(bash .github/scripts/get-build-number.sh "${{ env.NEWEST_VERSION }}")
+          echo "$OUTPUT"
+          echo "$OUTPUT" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Generate diff report
+        if: env.package_update_needed == 'true'
+        run: bash .github/scripts/generate-diff.sh "${{ env.VERSION }}" "${{ env.NEWEST_VERSION }}"
+
+      - name: Generate PR description
+        if: env.package_update_needed == 'true'
+        run: bash .github/scripts/generate-pr-description.sh "${{ env.VERSION }}" "${{ env.NEWEST_VERSION }}"
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
       - name: Install packager dependencies
-        if: env.package_update_needed == 'true' || github.ref != 'refs/heads/main'
+        if: env.package_update_needed == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y protobuf-compiler
 
-      - name: Generate packages
-        if: env.package_update_needed == 'true' || github.ref != 'refs/heads/main'
+      - name: Generate preview package
+        if: env.package_update_needed == 'true'
         run: bash generate.sh
         working-directory: tools/packager
         env:
           OUT_DIR: ${{ github.workspace }}/out
+          PREVIEW_VERSION: "${{ env.NEWEST_VERSION }}-preview.${{ env.BUILD }}"
+          NEWEST_VERSION: ${{ env.NEWEST_VERSION }}
 
-      - name: Upload artifacts
-        if: env.package_update_needed == 'true' || github.ref != 'refs/heads/main'
-        uses: actions/upload-artifact@v4
-        with:
-          name: out
-          path: |
-            out
-            !node_modules
-
-      - name: Publish packages
-        if: env.package_update_needed == 'true' && github.ref == 'refs/heads/main'
-        run: bash publish.sh
+      - name: Publish preview to NPM
+        if: env.package_update_needed == 'true'
+        id: publish_preview
+        continue-on-error: true
+        run: bash nodejs/publish-preview.sh
         working-directory: tools/packager
         env:
           DIST_DIR: ${{ github.workspace }}/out/dist
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Commit changes
-        if: env.package_update_needed == 'true' && github.ref == 'refs/heads/main'
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Create or update PR
+        if: env.package_update_needed == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          PUBLISH_STATUS="${{ steps.publish_preview.outcome }}"
+          bash .github/scripts/create-or-update-pr.sh "${{ env.VERSION }}" "${{ env.NEWEST_VERSION }}" "${{ env.BUILD }}" "$PUBLISH_STATUS"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Report preview publish status
+        if: env.package_update_needed == 'true'
+        uses: actions/github-script@v7
         with:
-          commit_message: "WhatsApp Web v${{ env.NEWEST_VERSION }}"
-          tagging_message: "v${{ env.NEWEST_VERSION }}"
+          script: |
+            const status = '${{ steps.publish_preview.outcome }}';
+            const conclusion = status === 'success' ? 'success' : 'failure';
+            const previewVersion = '${{ env.NEWEST_VERSION }}-preview.${{ env.BUILD }}';
+
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'preview-published',
+              head_sha: context.sha,
+              status: 'completed',
+              conclusion: conclusion,
+              output: {
+                title: conclusion === 'success'
+                  ? '✅ Preview version published successfully'
+                  : '❌ Failed to publish preview version',
+                summary: conclusion === 'success'
+                  ? `Preview version ${previewVersion} is now available on NPM with tag 'preview'`
+                  : 'Preview publication failed. Check workflow logs for details. PR created for documentation purposes.'
+              }
+            });

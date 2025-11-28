@@ -3,4 +3,4 @@
 cd $DIST_DIR/nodejs
 
 npm i
-npm publish --provenance --access public --tag beta
+npm publish --provenance --access public --tag latest
