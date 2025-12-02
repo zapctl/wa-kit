@@ -104,8 +104,6 @@ jobs:
         if: env.package_update_needed == 'true'
         run: bash .github/scripts/generate-pr-description.sh
         env:
-          OLD_VERSION: ${{ env.VERSION }}
-          NEWEST_VERSION: ${{ env.NEWEST_VERSION }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Commit changes

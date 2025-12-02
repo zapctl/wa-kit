@@ -1,4 +1,4 @@
-name: Check for updates
+name: Publish preview on PR Create
 
 on:
   pull_request:

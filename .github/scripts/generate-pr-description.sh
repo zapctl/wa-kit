@@ -2,20 +2,13 @@
 
 set -e
 
-OLD_VERSION=${OLD_VERSION:-none}
-
-if [ -z "$NEW_VERSION" ]; then
-  echo "Error: NEW_VERSION environment variable is not set"
-  exit 1
-fi
-
 if [ -z "$ANTHROPIC_API_KEY" ]; then
   echo "Error: ANTHROPIC_API_KEY environment variable is not set"
   exit 1
 fi
 
 if [ ! -f out/report.diff ]; then
-  echo "Error: report.diff not found. Run generate-diff.sh first."
+  echo "Error: out/report.diff not found."
   exit 1
 fi
 
@@ -24,7 +17,7 @@ DIFF_REPORT=$(cat out/report.diff)
 
 echo "Generating PR description using Claude AI..."
 
-PROMPT="Analyze the changes in WhatsApp Web protocol from version $OLD_VERSION to $NEW_VERSION.
+PROMPT="Analyze the changes in WhatsApp Web protocol from version $VERSION to $NEWEST_VERSION.
 
 Generate a PR description in markdown format with:
 1. Summary (3-5 bullet points of main changes)
