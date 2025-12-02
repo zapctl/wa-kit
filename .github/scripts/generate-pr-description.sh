@@ -2,14 +2,7 @@
 
 set -e
 
-OLD_VERSION=$1
-NEW_VERSION=$2
-DIFF_REPORT=$3
-
-if [ -z "$OLD_VERSION" ]; then
-  echo "Error: OLD_VERSION environment variable is not set"
-  exit 1
-fi
+OLD_VERSION=${OLD_VERSION:-none}
 
 if [ -z "$NEW_VERSION" ]; then
   echo "Error: NEW_VERSION environment variable is not set"

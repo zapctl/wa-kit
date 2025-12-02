@@ -21,7 +21,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Needed for git log searches
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -33,6 +33,9 @@ jobs:
 
       - name: Set up environment
         run: |
+          git config --global user.name "GitHub Actions [Bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
           mkdir -p out/packages
 
           [ -r out/.build ] && BUILD=$(cat out/.build) || BUILD="0"
@@ -53,7 +56,7 @@ jobs:
           cd tools/scraper
           npm install
 
-      - name: Scrap proto files
+      - name: Scrap files
         run: |
           node tools/scraper
 
@@ -79,7 +82,7 @@ jobs:
             echo "package_update_needed=true" >> $GITHUB_ENV
           fi
 
-      - name: Close all open pull requests via script
+      - name: Close all open pull requests
         uses: actions/github-script@v8
         with:
           script: |
@@ -101,69 +104,21 @@ jobs:
         if: env.package_update_needed == 'true'
         run: bash .github/scripts/generate-pr-description.sh
         env:
-          VERSION: ${{ env.VERSION }}
+          OLD_VERSION: ${{ env.VERSION }}
           NEWEST_VERSION: ${{ env.NEWEST_VERSION }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          DIFF_REPORT: ${{ env.DIFF_REPORT }}
 
-      - name: Install packager dependencies
+      - name: Commit changes
         if: env.package_update_needed == 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
+          git add out
+          git commit -m "WhatsApp Web v${{ env.NEWEST_VERSION }}"
+          git push -u origin "preview/v${{ env.NEWEST_VERSION }}" --force
 
-      - name: Generate preview package
+      - name: Open PR
         if: env.package_update_needed == 'true'
-        continue-on-error: true
-        run: bash generate.sh
-        working-directory: tools/packager
-        env:
-          OUT_DIR: ${{ github.workspace }}/out
-          PREVIEW_VERSION: "${{ env.NEWEST_VERSION }}-preview.${{ env.BUILD }}"
-
-      - name: Publish preview to NPM
-        if: env.package_update_needed == 'true'
-        id: publish_preview
-        continue-on-error: true
-        run: bash nodejs/publish.sh
-        working-directory: tools/packager
-        env:
-          DIST_DIR: ${{ github.workspace }}/out/dist
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Create or update PR
-        if: env.package_update_needed == 'true'
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          PUBLISH_STATUS="${{ steps.publish_preview.outcome }}"
-          bash .github/scripts/create-or-update-pr.sh "${{ env.VERSION }}" "${{ env.NEWEST_VERSION }}" "${{ env.BUILD }}" "$PUBLISH_STATUS"
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Report preview publish status
-        if: env.package_update_needed == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
-            const status = '${{ steps.publish_preview.outcome }}';
-            const conclusion = status === 'success' ? 'success' : 'failure';
-            const previewVersion = '${{ env.NEWEST_VERSION }}-preview.${{ env.BUILD }}';
-
-            await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: 'preview-published',
-              head_sha: context.sha,
-              status: 'completed',
-              conclusion: conclusion,
-              output: {
-                title: conclusion === 'success'
-                  ? '✅ Preview version published successfully'
-                  : '❌ Failed to publish preview version',
-                summary: conclusion === 'success'
-                  ? `Preview version ${previewVersion} is now available on NPM with tag 'preview'`
-                  : 'Preview publication failed. Check workflow logs for details. PR created for documentation purposes.'
-              }
-            });
+            const script = require('.github/scripts/open-pr.js');
+            await script({ github, context, core });
