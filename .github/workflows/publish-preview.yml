@@ -23,12 +23,12 @@ env:
   PACKAGE_NAME: wa-kitchen
 
 permissions:
+  id-token: write
   contents: write
   checks: write
-  id-token: write
 
 jobs:
-  publish-preview:
+  publish:
     runs-on: ubuntu-latest
 
     steps:
