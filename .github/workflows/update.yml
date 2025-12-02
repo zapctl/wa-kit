@@ -92,7 +92,7 @@ jobs:
       - name: Generate diff report
         if: env.package_update_needed == 'true'
         run: |
-          git add .
+          git add out
           CHANGED_FILES=$(git diff HEAD --name-only)
           DIFF_REPORT=$(git diff HEAD)
           git reset
@@ -111,6 +111,7 @@ jobs:
         run: |
           git add out
           git commit -m "WhatsApp Web v${{ env.NEWEST_VERSION }}"
+          git branch "preview/v${{ env.NEWEST_VERSION }}"
           git push -u origin "preview/v${{ env.NEWEST_VERSION }}" --force
 
       - name: Open PR

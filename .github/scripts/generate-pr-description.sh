@@ -52,6 +52,8 @@ RESPONSE=$(curl -s -X POST https://api.anthropic.com/v1/messages \
   -H "anthropic-version: 2023-06-01" \
   -d "$PAYLOAD")
 
+echo "$RESPONSE"
+
 DESCRIPTION=$(echo "$RESPONSE" | jq -r '.content[0].text // "Failed to generate description"')
 
 echo "$DESCRIPTION" > out/pr-description.md
