@@ -18,6 +18,7 @@ MESSAGE_OUT=$OUT/message
 setup() {
     echo "Installing dependencies..."
     npm install
+    export PATH="$PATH:$(npm root)/.bin"
     
     echo "Cleaning and creating out directory..."
     rm -rf $OUT
@@ -148,7 +149,7 @@ compile_ts() {
     
     tsFiles=$(find $OUT -type f -name "*.ts")
     
-    npx tsc $tsFiles \
+    tsc $tsFiles \
     --declaration \
     --module commonjs \
     --target es2022 \
@@ -174,7 +175,7 @@ minify() {
     
     for filePath in $OUT/**/*.js; do
         (
-            npx uglifyjs $filePath \
+            uglifyjs $filePath \
             --compress \
             -o "$filePath"
         ) &
