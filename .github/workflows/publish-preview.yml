@@ -85,6 +85,7 @@ jobs:
         working-directory: tools/packager
         env:
           OUT_DIR: ${{ github.workspace }}/out
+          VERSION: "${{ env.VERSION }}-preview.${{ env.BUILD }}"
 
       - name: Publish preview packages
         id: publish_preview
