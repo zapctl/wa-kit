@@ -113,7 +113,7 @@ jobs:
       newest_version: ${{ env.NEWEST_VERSION }}
       preview_branch: ${{ env.PREVIEW_BRANCH }}
 
-  publish-preview:
+  publish:
     needs: update
     if: needs.update.outputs.package_update_needed == 'true'
     uses: ./.github/workflows/publish-preview.yml

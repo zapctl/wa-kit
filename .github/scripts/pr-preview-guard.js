@@ -1,10 +1,3 @@
-/**
- * PR Preview Guard
- *
- * Este script gerencia alertas no PR durante a publicação de versões preview,
- * bloqueando o merge até que a publicação seja concluída.
- */
-
 module.exports = async ({ github, context, core }) => {
   const status = core.getInput('status') || process.env.PUBLISH_STATUS || 'started';
   const version = core.getInput('version') || process.env.PREVIEW_VERSION || '';
