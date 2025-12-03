@@ -25,6 +25,7 @@ permissions:
   id-token: write
   contents: write
   checks: write
+  pull-requests: write
 
 jobs:
   publish-preview:
@@ -35,6 +36,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch || github.ref }}
+
+      - name: Alert PR - Publishing started
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const script = require('./.github/scripts/pr-preview-guard.js');
+            await script({ github, context, core });
+        env:
+          PUBLISH_STATUS: 'started'
+          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -91,6 +102,22 @@ jobs:
           git add out/.build
           git commit -m "chore: increment preview build to ${{ env.BUILD }}"
           git push
+
+      - name: Alert PR - Publishing completed
+        if: always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const script = require('./.github/scripts/pr-preview-guard.js');
+            const gen = "${{ steps.generate_preview.outcome }}";
+            const pub = "${{ steps.publish_preview.outcome }}";
+            const failed = gen !== "success" || pub !== "success";
+
+            process.env.PUBLISH_STATUS = failed ? 'failure' : 'success';
+            await script({ github, context, core });
+        env:
+          PREVIEW_VERSION: ${{ env.VERSION }}-preview.${{ env.BUILD }}
+          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
 
       - name: Report preview publish status
         uses: actions/github-script@v8

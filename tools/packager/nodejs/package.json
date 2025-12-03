@@ -51,10 +51,12 @@
     "url": "https://github.com/zapctl/wa-kitchen/issues"
   },
   "dependencies": {
-    "@bufbuild/protobuf": "1.10.0",
-    "pako": "^2.1.0"
+    "@bufbuild/protobuf": "1.10.0"
   },
   "devDependencies": {
-    "@types/node": "^24.10.1"
+    "@bufbuild/protoc-gen-es": "1.10.0",
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3",
+    "uglify-js": "^3.19.3"
   }
 }

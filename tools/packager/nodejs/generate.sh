@@ -17,7 +17,7 @@ MESSAGE_OUT=$OUT/message
 
 setup() {
     echo "Installing dependencies..."
-    npm install -g typescript uglify-js @bufbuild/protoc-gen-es@1.10.0
+    npm install
     
     echo "Cleaning and creating out directory..."
     rm -rf $OUT
@@ -38,7 +38,7 @@ generate_package() {
     echo "Copying package files..."
     cp package.json $OUT/package.json
     cp readme.md $OUT/readme.md
-
+    
     if [ -n "$PREVIEW_VERSION" ]; then
         echo "Injecting preview version $PREVIEW_VERSION..."
         sed -i 's/{{WA_VERSION}}/'"$PREVIEW_VERSION"'/g' $OUT/package.json
@@ -48,7 +48,7 @@ generate_package() {
         sed -i 's/{{WA_VERSION}}/'"$NEWEST_VERSION"'/g' $OUT/package.json
         sed -i 's/{{WA_VERSION}}/'"$NEWEST_VERSION"'/g' $OUT/readme.md
     fi
-
+    
     echo "Package file generated"
 }
 
@@ -145,14 +145,13 @@ compile_proto() {
 
 compile_ts() {
     echo "Compiling TypeScript files..."
-
+    
     tsFiles=$(find $OUT -type f -name "*.ts")
-
-    tsc $tsFiles \
+    
+    npx tsc $tsFiles \
     --declaration \
-    --module node16 \
+    --module commonjs \
     --target es2022 \
-    --moduleResolution node16 \
     --esModuleInterop \
     --skipLibCheck \
     --types node \
@@ -161,9 +160,9 @@ compile_ts() {
         echo "Error: TypeScript compilation failed"
         exit 1
     }
-
+    
     echo "TypeScript compilation completed"
-
+    
     echo "Removing TypeScript source files..."
     rm $tsFiles
 }
@@ -175,7 +174,7 @@ minify() {
     
     for filePath in $OUT/**/*.js; do
         (
-            uglifyjs $filePath \
+            npx uglifyjs $filePath \
             --compress \
             -o "$filePath"
         ) &
