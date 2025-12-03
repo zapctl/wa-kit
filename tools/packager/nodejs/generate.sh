@@ -155,6 +155,7 @@ compile_ts() {
     --moduleResolution node16 \
     --esModuleInterop \
     --skipLibCheck \
+    --types node \
     --outdir $OUT \
     || {
         echo "Error: TypeScript compilation failed"
