@@ -1,4 +1,4 @@
-import { inflateSync } from "zlib";
+import { inflateSync } from "node:zlib";
 
 export function BytesEquals(bytes1: Uint8Array, bytes2: Uint8Array) {
   return bytes1.byteLength === bytes2.byteLength &&

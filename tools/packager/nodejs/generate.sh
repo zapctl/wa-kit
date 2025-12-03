@@ -145,21 +145,24 @@ compile_proto() {
 
 compile_ts() {
     echo "Compiling TypeScript files..."
-    
+
     tsFiles=$(find $OUT -type f -name "*.ts")
-    
+
     tsc $tsFiles \
     --declaration \
     --module commonjs \
     --target es2022 \
+    --moduleResolution node16 \
+    --esModuleInterop \
+    --skipLibCheck \
     --outdir $OUT \
     || {
         echo "Error: TypeScript compilation failed"
         exit 1
     }
-    
+
     echo "TypeScript compilation completed"
-    
+
     echo "Removing TypeScript source files..."
     rm $tsFiles
 }

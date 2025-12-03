@@ -17,7 +17,6 @@ on:
   push:
     branches:
       - 'preview/**'
-  workflow_dispatch:
 
 env:
   PACKAGE_NAME: wa-kitchen
@@ -41,6 +40,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          registry-url: "https://registry.npmjs.org"
 
       - name: Set up environment
         run: |
@@ -77,6 +77,7 @@ jobs:
 
       - name: Publish preview packages
         id: publish_preview
+        if: steps.generate_preview.outcome == 'success'
         continue-on-error: true
         run: bash publish.sh
         working-directory: tools/packager
@@ -85,7 +86,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Commit build increment
-        if: inputs.version == ''
+        if: inputs.version == '' && steps.publish_preview.outcome == 'success'
         run: |
           git add out/.build
           git commit -m "chore: increment preview build to ${{ env.BUILD }}"
@@ -106,14 +107,14 @@ jobs:
             await github.rest.checks.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              name: "preview-published",
+              name: "publish-status",
               head_sha: context.sha,
               status: "completed",
               conclusion: failed ? "failure" : "success",
               output: {
                 title: failed
-                  ? `❌ Failed to publish preview v${previewVersion}`
-                  : `✅ Preview v${previewVersion} published successfully`,
+                  ? `❌ Failed to publish v${previewVersion}`
+                  : `✅ v${previewVersion} published successfully`,
                 summary: failed
                   ? "Preview publication failed. Check the workflow logs for details."
                   : `## 🎉 Preview version available on NPM\n\n` +
