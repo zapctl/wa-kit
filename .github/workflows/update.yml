@@ -118,7 +118,7 @@ jobs:
     if: needs.update.outputs.package_update_needed == 'true'
     uses: ./.github/workflows/publish-preview.yml
     with:
-      branch: ${{ needs.update.outputs.preview_branch }}
       version: ${{ needs.update.outputs.newest_version }}
+      branch: ${{ needs.update.outputs.preview_branch }}
     secrets:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

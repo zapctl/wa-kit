@@ -21,6 +21,9 @@ on:
 env:
   PACKAGE_NAME: wa-kitchen
   PACKAGE_TAG: preview
+  BRANCH: ${{ inputs.branch || github.ref }}
+  OUT_DIR: ${{ github.workspace }}/out
+  DIST_DIR: ${{ github.workspace }}/out/dist
 
 permissions:
   id-token: write
@@ -36,43 +39,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch || github.ref }}
-
-      - name: Alert PR - Publishing started
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const script = require('./.github/scripts/pr-preview-guard.js');
-            await script({ github, context, core });
-        env:
-          PUBLISH_STATUS: 'started'
-          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
-          PREVIEW_VERSION: ${{ inputs.version }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          registry-url: "https://registry.npmjs.org"
+          ref: ${{ env.BRANCH }}
 
       - name: Set up environment
         run: |
           git config --global user.name "GitHub Actions [Bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          if [ -n "${{ inputs.version }}" ]; then
-            VERSION="${{ inputs.version }}"
-            BUILD="0"
-          else
-            CURRENT_BUILD=$(cat out/.build 2>/dev/null || echo "0")
-            VERSION=$(cat out/.version)
-            BUILD=$((CURRENT_BUILD + 1))
-          fi
+          VERSION="${{ inputs.version }}"
+          [ -z "$VERSION" ] && VERSION=$(cat out/.version)
 
-          echo "$BUILD" > out/.build
-          echo "BUILD=$BUILD" >> $GITHUB_ENV
+          CURRENT_BUILD=$(cat out/.build 2>/dev/null || echo "0")
+          BUILD=$((CURRENT_BUILD + 1))
+
+          PACKAGE_VERSION=$VERSION-$PACKAGE_TAG.$BUILD
+
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Publishing version: $VERSION-$PACKAGE_TAG.$BUILD"
+          echo "BUILD=$BUILD" >> $GITHUB_ENV
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
+
+          echo "Publishing version: $PACKAGE_VERSION"
+
+      - name: Alert PR - Publishing started
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const script = require("./.github/scripts/pr-preview-guard.js");
+            const status = "started";
+
+            await script({ github, context, core, status });
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: |
@@ -84,9 +85,6 @@ jobs:
         continue-on-error: true
         run: bash generate.sh
         working-directory: tools/packager
-        env:
-          OUT_DIR: ${{ github.workspace }}/out
-          VERSION: "${{ env.VERSION }}-$PACKAGE_TAG.${{ env.BUILD }}"
 
       - name: Publish preview packages
         id: publish_preview
@@ -95,14 +93,14 @@ jobs:
         run: bash publish.sh
         working-directory: tools/packager
         env:
-          DIST_DIR: ${{ github.workspace }}/out/dist
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Commit build increment
         if: inputs.version == '' && steps.publish_preview.outcome == 'success'
         run: |
+          echo "$BUILD" > out/.build
           git add out/.build
-          git commit -m "chore: increment preview build to ${{ env.BUILD }}"
+          git commit -m "chore: increment preview build to $BUILD"
           git push
 
       - name: Alert PR - Publishing completed
@@ -111,43 +109,9 @@ jobs:
         with:
           script: |
             const script = require('./.github/scripts/pr-preview-guard.js');
-            const gen = "${{ steps.generate_preview.outcome }}";
-            const pub = "${{ steps.publish_preview.outcome }}";
-            const failed = gen !== "success" || pub !== "success";
+            const genStatus = "${{ steps.generate_preview.outcome }}";
+            const pubStatus = "${{ steps.publish_preview.outcome }}";
+            const success = genStatus === "success" || pubStatus === "success";
+            const status = success ? "success" : "failure";
 
-            process.env.PUBLISH_STATUS = failed ? 'failure' : 'success';
-            await script({ github, context, core });
-        env:
-          PREVIEW_VERSION: ${{ env.VERSION }}-${{ env.PACKAGE_TAG }}.${{ env.BUILD }}
-          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
-
-      - name: Report preview publish status
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const gen = "${{ steps.generate_preview.outcome }}";
-            const pub = "${{ steps.publish_preview.outcome }}";
-            const failed = gen !== "success" || pub !== "success";
-
-            const packageName = "${{ env.PACKAGE_NAME }}";
-            const previewVersion = "${{ env.VERSION }}-${{ env.PACKAGE_TAG }}.${{ env.BUILD }}";
-            const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${previewVersion}`;
-
-            await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: "publish-status",
-              head_sha: context.sha,
-              status: "completed",
-              conclusion: failed ? "failure" : "success",
-              output: {
-                title: failed
-                  ? `❌ Failed to publish v${previewVersion}`
-                  : `✅ v${previewVersion} published successfully`,
-                summary: failed
-                  ? "Preview publication failed. Check the workflow logs for details."
-                  : `## 🎉 Preview version available on NPM\n\n` +
-                    `**Version:** \`${previewVersion}\`\n\n` +
-                    `**NPM Package:** [${packageName}@${previewVersion}](${npmUrl})\n\n`
-              }
-            });
+            await script({ github, context, core, status });

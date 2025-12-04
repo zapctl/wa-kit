@@ -1,160 +1,75 @@
-module.exports = async ({ github, context, core }) => {
-  const status = core.getInput('status') || process.env.PUBLISH_STATUS || 'started';
-  const version = core.getInput('version') || process.env.PREVIEW_VERSION || '';
-  const packageName = core.getInput('package_name') || process.env.PACKAGE_NAME || 'wa-kitchen';
+module.exports = async ({ github, context }) => {
+  const checkName = "preview-publish-guard";
+  const status = process.env.STATUS;
+  const branch = process.env.BRANCH;
+  const packageVersion = process.env.PACKAGE_VERSION;
+  const packageName = process.env.PACKAGE_NAME;
 
   console.log(`Status: ${status}`);
-  console.log(`Version: ${version}`);
-  console.log(`Package: ${packageName}`);
+  console.log(`Package name: ${packageName}`);
+  console.log(`Package version: ${packageVersion}`);
 
-  // Encontrar o PR associado ao branch atual
-  async function findAssociatedPR() {
-    const branch = context.ref.replace('refs/heads/', '');
-    console.log(`Finding PR for branch: ${branch}`);
+  const pr = await github.rest.pulls.list({
+    owner,
+    repo,
+    head: `${owner}:${branch}`,
+    base: "main",
+    state: "open",
+  }).then(({ data }) => data.filter((pr) => {
+    return pr.labels.some((label) => label.name === "automated");
+  }));
 
-    const { data: pullRequests } = await github.rest.pulls.list({
+  if (!pr) throw new Error("No PR found for this branch");
+
+  async function createCheck(data) {
+    return github.rest.checks.create({
       owner: context.repo.owner,
       repo: context.repo.repo,
-      state: 'open'
+      name: checkName,
+      head_sha: context.sha,
+      ...data,
     });
-
-    const pr = pullRequests.find(pr => pr.head.ref === branch);
-
-    if (pr) {
-      console.log(`Found PR #${pr.number}`);
-      return pr.number;
-    }
-
-    console.log('No PR found for this branch');
-    return null;
   }
 
-  // Criar ou atualizar check de bloqueio
-  async function createBlockingCheck(prNumber, checkStatus) {
-    const checkName = 'preview-publish-guard';
-
-    let checkParams;
-
-    if (checkStatus === 'started') {
-      checkParams = {
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        name: checkName,
-        head_sha: context.sha,
+  switch (status) {
+    case "started": {
+      await createCheck({
         status: 'in_progress',
         output: {
           title: '🚀 Publishing preview version...',
-          summary:
-            '⚠️ **PR merge is blocked until preview publication completes.**\n\n' +
-            'A preview version is being published to NPM. Please wait for the process to finish.\n\n' +
-            `**Version:** ${version || 'generating...'}\n\n` +
-            `[View workflow run](${context.payload.repository?.html_url || context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo}/actions/runs/${context.runId})`
+          summary: 'A preview version is being published.',
         }
-      };
-    } else if (checkStatus === 'success') {
+      });
+      break;
+    }
+    case "success": {
       const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${version}`;
-      checkParams = {
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        name: checkName,
-        head_sha: context.sha,
+
+      await createCheck({
         status: 'completed',
         conclusion: 'success',
         output: {
-          title: `✅ Preview v${version} published successfully`,
-          summary:
-            '## 🎉 Preview version published to NPM\n\n' +
-            `**Version:** \`${version}\`\n\n` +
-            `**NPM Package:** [${packageName}@${version}](${npmUrl})\n\n` +
-            '✅ **PR can now be merged.**\n\n' +
-            `[View workflow run](${context.payload.repository?.html_url || context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo}/actions/runs/${context.runId})`
+          title: `✅ Preview version published successfully`,
+          summary: `[NPM Package](${npmUrl})\n\n`,
         }
-      };
-    } else if (checkStatus === 'failure') {
-      checkParams = {
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        name: checkName,
-        head_sha: context.sha,
+      });
+      break;
+    }
+    case "failure": {
+      await createCheck({
         status: 'completed',
         conclusion: 'failure',
         output: {
           title: '❌ Preview publication failed',
-          summary:
-            'Preview publication encountered an error.\n\n' +
-            '⚠️ **PR merge remains blocked** until the issue is resolved.\n\n' +
-            `[View workflow run](${context.payload.repository?.html_url || context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo}/actions/runs/${context.runId})\n\n` +
-            'Please check the workflow logs for more information.'
+          summary: 'Preview publication encountered an error.\n\n' +
+            'Please check the workflow logs for more information.',
         }
-      };
+      });
+      break;
     }
-
-    console.log(`Creating check with status: ${checkStatus}`);
-    await github.rest.checks.create(checkParams);
+    default:
+      throw new Error("invalid guard status");
   }
 
-  // Comentar no PR
-  async function commentOnPR(prNumber, commentStatus) {
-    let body;
-
-    if (commentStatus === 'started') {
-      body =
-        '## 🚀 Preview Publication Started\n\n' +
-        '⚠️ **PR merge is blocked** until preview publication completes.\n\n' +
-        'A preview version is being published to NPM. This ensures that the package is available before merging.\n\n' +
-        `**Status:** Publishing ${version ? `v${version}` : 'preview version'}...\n\n` +
-        `**Workflow Run:** [View details](${context.payload.repository?.html_url || context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo}/actions/runs/${context.runId})\n\n` +
-        '---\n' +
-        '*This comment was automatically generated by the preview publication workflow.*';
-    } else if (commentStatus === 'success') {
-      const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${version}`;
-      body =
-        '## ✅ Preview Publication Completed\n\n' +
-        `The preview version **v${version}** has been successfully published to NPM.\n\n` +
-        '🎉 **PR merge is now unblocked** - you can proceed with merging.\n\n' +
-        `**NPM Package:** [${packageName}@${version}](${npmUrl})\n\n` +
-        '### Installation\n' +
-        '```bash\n' +
-        `npm install ${packageName}@${version}\n` +
-        '```\n\n' +
-        `**Workflow Run:** [View details](${context.payload.repository?.html_url || context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo}/actions/runs/${context.runId})\n\n` +
-        '---\n' +
-        '*This comment was automatically generated by the preview publication workflow.*';
-    } else if (commentStatus === 'failure') {
-      body =
-        '## ❌ Preview Publication Failed\n\n' +
-        'The preview publication encountered an error.\n\n' +
-        '⚠️ **PR merge remains blocked** until the issue is resolved.\n\n' +
-        `**Workflow Run:** [View details](${context.payload.repository?.html_url || context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo}/actions/runs/${context.runId})\n\n` +
-        'Please check the workflow logs for more information.\n\n' +
-        '---\n' +
-        '*This comment was automatically generated by the preview publication workflow.*';
-    }
-
-    console.log(`Commenting on PR #${prNumber}`);
-    await github.rest.issues.createComment({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      issue_number: prNumber,
-      body: body
-    });
-  }
-
-  // Execução principal
-  const prNumber = await findAssociatedPR();
-
-  if (!prNumber) {
-    console.log('No PR found, skipping guard actions');
-    return;
-  }
-
-  console.log(`Processing guard for PR #${prNumber} with status: ${status}`);
-
-  // Criar check de bloqueio
-  await createBlockingCheck(prNumber, status);
-
-  // Comentar no PR
-  await commentOnPR(prNumber, status);
-
-  console.log('PR guard completed successfully');
+  console.log(`PR guard for PR #${prNumber} with status ${status} completed successfully`);
 };

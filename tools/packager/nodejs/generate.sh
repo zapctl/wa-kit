@@ -40,9 +40,9 @@ generate_package() {
     cp package.json $OUT/package.json
     cp readme.md $OUT/readme.md
     
-    echo "Injecting version $VERSION..."
-    sed -i 's/{{WA_VERSION}}/'"$VERSION"'/g' $OUT/package.json
-    sed -i 's/{{WA_VERSION}}/'"$VERSION"'/g' $OUT/readme.md
+    echo "Injecting version $PACKAGE_VERSION..."
+    sed -i 's/{{WA_VERSION}}/'"$PACKAGE_VERSION"'/g' $OUT/package.json
+    sed -i 's/{{WA_VERSION}}/'"$PACKAGE_VERSION"'/g' $OUT/readme.md
     
     echo "Package file generated"
 }
