@@ -22,6 +22,22 @@ module.exports = async ({ github, context, status }) => {
   if (!pr) throw new Error("No PR found for this branch");
 
   async function createCheck(data) {
+    const existingCheck = await github.rest.checks.listForRef({
+      owner,
+      repo,
+      ref: context.sha,
+      check_name: checkName,
+    }).then(res => res[0]);
+
+    if (existingCheck) {
+      return github.rest.checks.update({
+        owner,
+        repo,
+        check_run_id: existingCheck.id,
+        ...data,
+      });
+    }
+
     return github.rest.checks.create({
       owner,
       repo,
