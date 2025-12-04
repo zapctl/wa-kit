@@ -1,0 +1,39 @@
+{
+  "id": "29361942130088470",
+  "name": "BizCatalogManagementCreateCollection",
+  "type": "mutation",
+  "input": {
+    "type": "object",
+    "properties": {
+      "input": {
+        "type": "scalar"
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "xfb_whatsapp_catalog_create_collection": {
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "scalar"
+              },
+              "status_info": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "scalar"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

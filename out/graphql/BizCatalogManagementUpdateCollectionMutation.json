@@ -1,0 +1,39 @@
+{
+  "id": "24486970300891371",
+  "name": "BizCatalogManagementUpdateCollection",
+  "type": "mutation",
+  "input": {
+    "type": "object",
+    "properties": {
+      "input": {
+        "type": "scalar"
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "xfb_whatsapp_catalog_update_collection": {
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "scalar"
+              },
+              "status_info": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "scalar"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
