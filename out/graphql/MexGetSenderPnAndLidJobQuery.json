@@ -1,0 +1,29 @@
+{
+  "id": "9988747954494072",
+  "name": "MexGetSenderPnAndLidJob",
+  "type": "query",
+  "input": {
+    "type": "object",
+    "properties": {
+      "input": {
+        "type": "scalar"
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "xwa2_growth_invite_get_sender_info": {
+        "type": "object",
+        "properties": {
+          "sender_lid": {
+            "type": "scalar"
+          },
+          "sender_pn": {
+            "type": "scalar"
+          }
+        }
+      }
+    }
+  }
+}

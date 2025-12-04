@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+message Message {
+	optional string conversation = 1;
+	optional ExtendedTextMessage extendedTextMessage = 6;
+	optional MessageContextInfo messageContextInfo = 35;
+
+	message ExtendedTextMessage {
+		optional string text = 1;
+		optional Message.ContextInfo contextInfo = 17;
+	}
+
+	message ContextInfo {
+		optional string stanzaId = 1;
+		optional string participant = 2;
+		optional Message quotedMessage = 3;
+	}
+}
+
+message MessageContextInfo {
+	optional bytes messageSecret = 3;
+}
