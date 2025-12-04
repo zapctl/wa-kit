@@ -15,7 +15,7 @@ module.exports = async ({ github, context, status }) => {
     head: `${owner}:${branch}`,
     base: "main",
     state: "open",
-  }).then(({ data }) => data.filter((pr) => {
+  }).then(({ data }) => data.find((pr) => {
     return pr.labels.some((label) => label.name === "automated");
   }));
 
@@ -25,9 +25,9 @@ module.exports = async ({ github, context, status }) => {
     const existingCheck = await github.rest.checks.listForRef({
       owner,
       repo,
-      ref: context.sha,
+      ref: pr.head.sha,
       check_name: checkName,
-    }).then(res => res[0]);
+    }).then(res => res.data.check_runs[0]);
 
     if (existingCheck) {
       return github.rest.checks.update({
@@ -42,7 +42,7 @@ module.exports = async ({ github, context, status }) => {
       owner,
       repo,
       name: checkName,
-      head_sha: context.sha,
+      head_sha: pr.head.sha,
       ...data,
     });
   }
