@@ -1,4 +1,5 @@
 module.exports = async ({ github, context }) => {
+  const { owner, repo } = context.repo;
   const checkName = "preview-publish-guard";
   const status = process.env.STATUS;
   const branch = process.env.BRANCH;
@@ -23,8 +24,8 @@ module.exports = async ({ github, context }) => {
 
   async function createCheck(data) {
     return github.rest.checks.create({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
+      owner,
+      repo,
       name: checkName,
       head_sha: context.sha,
       ...data,
