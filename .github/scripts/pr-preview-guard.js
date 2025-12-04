@@ -1,7 +1,6 @@
-module.exports = async ({ github, context }) => {
+module.exports = async ({ github, context, status }) => {
   const { owner, repo } = context.repo;
   const checkName = "preview-publish-guard";
-  const status = process.env.STATUS;
   const branch = process.env.BRANCH;
   const packageVersion = process.env.PACKAGE_VERSION;
   const packageName = process.env.PACKAGE_NAME;
