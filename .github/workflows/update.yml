@@ -126,6 +126,7 @@ jobs:
             await script({ github, context, core });
 
       - name: Alert PR - Publishing started
+        if: env.package_update_needed == 'true'
         uses: actions/github-script@v8
         with:
           script: |
