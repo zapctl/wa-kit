@@ -1,7 +1,15 @@
 name: Publish preview
 
 on:
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      branch:
+        description: 'Branch to publish from'
+        required: true
+        type: string
+    secrets:
+      NPM_TOKEN:
+        required: true
   push:
     branches:
       - 'preview/**'
@@ -9,7 +17,7 @@ on:
 env:
   PACKAGE_NAME: wa-kitchen
   PACKAGE_TAG: preview
-  BRANCH: ${{ github.ref }}
+  BRANCH: ${{ inputs.branch || github.ref }}
   OUT_DIR: ${{ github.workspace }}/out
   DIST_DIR: ${{ github.workspace }}/out/dist
 

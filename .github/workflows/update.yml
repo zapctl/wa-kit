@@ -12,7 +12,6 @@ jobs:
       id-token: write
       contents: write
       pull-requests: write
-      actions: write
 
     steps:
       - name: Checkout repository
@@ -132,3 +131,12 @@ jobs:
           gh workflow run publish-preview.yml --ref $PREVIEW_BRANCH
         env:
           GH_TOKEN: ${{ github.token }}
+
+  publish:
+    needs: update
+    if: needs.update.outputs.package_update_needed == 'true'
+    uses: ./.github/workflows/publish-preview.yml
+    with:
+      branch: ${{ needs.update.outputs.preview_branch }}
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

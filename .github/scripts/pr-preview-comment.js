@@ -22,7 +22,7 @@ module.exports = async ({ github, context }) => {
     owner,
     repo,
     issue_number: pr.number,
-    body: `## 📦 Preview packages published` +
+    body: `## 📦 Preview packages published\n` +
       `#### **Node.js:** [${packageName}@${packageVersion}](${npmUrl})`
   });
 
