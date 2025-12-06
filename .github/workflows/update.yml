@@ -12,6 +12,7 @@ jobs:
       id-token: write
       contents: write
       pull-requests: write
+      actions: write
 
     steps:
       - name: Checkout repository
@@ -114,8 +115,8 @@ jobs:
         run: |
           git add out
           git commit -m "WhatsApp Web v$NEWEST_VERSION"
-          git branch "$PREVIEW_BRANCH"
-          git push -u origin "$PREVIEW_BRANCH" --force
+          git branch $PREVIEW_BRANCH
+          git push -u origin $PREVIEW_BRANCH --force
 
       - name: Open PR
         if: env.package_update_needed == 'true'
@@ -128,6 +129,6 @@ jobs:
       - name: Trigger publish workflow on preview branch
         if: env.package_update_needed == 'true'
         run: |
-          gh workflow run publish-preview.yml --ref "$PREVIEW_BRANCH"
+          gh workflow run publish-preview.yml --ref $PREVIEW_BRANCH
         env:
           GH_TOKEN: ${{ github.token }}
