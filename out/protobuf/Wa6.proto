@@ -145,6 +145,7 @@ message ClientPayload {
 			MNS = 5;
 			MNS_SECONDARY = 6;
 			SOCKS_PROXY = 7;
+			SOCKS_PROXY_TESTE = 8;
 		}
 	}
 
