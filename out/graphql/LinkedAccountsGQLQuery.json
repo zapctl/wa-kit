@@ -1,0 +1,59 @@
+{
+  "id": "25711291071821777",
+  "name": "LinkedAccountsGQL",
+  "type": "query",
+  "input": null,
+  "output": {
+    "type": "object",
+    "properties": {
+      "xfb_wa_biz_linked_accounts": {
+        "type": "object",
+        "properties": {
+          "linked_accounts": {
+            "type": "object",
+            "properties": {
+              "fb_page": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "scalar"
+                  },
+                  "ad_status": {
+                    "type": "object",
+                    "properties": {
+                      "has_active_ctwa_ad": {
+                        "type": "scalar"
+                      },
+                      "has_created_ad": {
+                        "type": "scalar"
+                      }
+                    }
+                  }
+                }
+              },
+              "wa_ad_identity": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "scalar"
+                  },
+                  "ad_status": {
+                    "type": "object",
+                    "properties": {
+                      "has_active_ctwa_ad": {
+                        "type": "scalar"
+                      },
+                      "has_created_ad": {
+                        "type": "scalar"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
