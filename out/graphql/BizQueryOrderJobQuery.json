@@ -1,0 +1,99 @@
+{
+  "id": "27500063212935409",
+  "name": "BizQueryOrderJob",
+  "type": "query",
+  "input": {
+    "type": "object",
+    "properties": {
+      "request": {
+        "type": "scalar"
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "xwa_checkout_get_order_info": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "object",
+            "properties": {
+              "creation_time_stamp": {
+                "type": "scalar"
+              },
+              "products": {
+                "type": "array",
+                "items": {
+                  "id": {
+                    "type": "scalar",
+                    "required": true
+                  },
+                  "name": {
+                    "type": "scalar",
+                    "required": true
+                  },
+                  "price": {
+                    "type": "scalar"
+                  },
+                  "currency": {
+                    "type": "scalar"
+                  },
+                  "variant_info": {
+                    "type": "object",
+                    "properties": {
+                      "variant_properties": {
+                        "type": "array",
+                        "items": {
+                          "name": {
+                            "type": "scalar"
+                          },
+                          "value": {
+                            "type": "scalar"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "media": {
+                    "type": "object",
+                    "properties": {
+                      "images": {
+                        "type": "array",
+                        "items": {
+                          "id": {
+                            "type": "scalar"
+                          },
+                          "request_image_url": {
+                            "type": "scalar"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "quantity": {
+                    "type": "scalar"
+                  }
+                }
+              },
+              "price_details": {
+                "type": "object",
+                "properties": {
+                  "subtotal": {
+                    "type": "scalar"
+                  },
+                  "currency": {
+                    "type": "scalar"
+                  },
+                  "total": {
+                    "type": "scalar"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
