@@ -95,7 +95,7 @@ jobs:
           git push
 
       - name: Comment preview package link on PR
-        if: steps.publish_preview.outcome == 'success' && env.BUILD == '1'
+        if: steps.publish_preview.outcome == 'success'
         uses: actions/github-script@v8
         with:
           script: |

@@ -22,12 +22,8 @@ module.exports = async ({ github, context }) => {
     owner,
     repo,
     issue_number: pr.number,
-    body: `## 📦 Preview packages published
-
-**Node:** [${packageName}@${packageVersion}](${npmUrl})
-\`\`\`bash
-npm install ${packageName}@${packageVersion}
-\`\`\``
+    body: `## 📦 Preview packages published` +
+      `**Node:** [${packageName}@${packageVersion}](${npmUrl})`
   });
 
   console.log(`Posted preview package comment on PR #${pr.number}`);
