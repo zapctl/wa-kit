@@ -36,9 +36,7 @@ It acts as a *build pipeline* that continuously watches WhatsApp Web, parses its
 
 ## 📦 Packages
 
-### **Node.js (NPM)**
-
-* [https://www.npmjs.com/package/wa-kitchen](https://www.npmjs.com/package/wa-kitchen)
+#### **Node.js:** [https://www.npmjs.com/package/wa-kitchen](https://www.npmjs.com/package/wa-kitchen)
 
 More languages and targets will be added as the extraction pipeline evolves.
 

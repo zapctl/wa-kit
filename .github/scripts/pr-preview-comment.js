@@ -23,7 +23,7 @@ module.exports = async ({ github, context }) => {
     repo,
     issue_number: pr.number,
     body: `## 📦 Preview packages published` +
-      `**Node:** [${packageName}@${packageVersion}](${npmUrl})`
+      `#### **Node.js:** [${packageName}@${packageVersion}](${npmUrl})`
   });
 
   console.log(`Posted preview package comment on PR #${pr.number}`);
