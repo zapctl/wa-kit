@@ -1,0 +1,51 @@
+{
+  "id": "24718218934518019",
+  "name": "BizCreateOrderJob",
+  "type": "mutation",
+  "input": {
+    "type": "object",
+    "properties": {
+      "input": {
+        "type": "scalar"
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "xwa_checkout_place_order": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "object",
+            "properties": {
+              "order_id": {
+                "type": "scalar"
+              },
+              "token": {
+                "type": "scalar"
+              },
+              "price": {
+                "type": "object",
+                "properties": {
+                  "currency": {
+                    "type": "scalar"
+                  },
+                  "subtotal": {
+                    "type": "scalar"
+                  },
+                  "total": {
+                    "type": "scalar"
+                  },
+                  "price_status": {
+                    "type": "scalar"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
