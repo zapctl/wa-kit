@@ -1,0 +1,14 @@
+{
+  "id": "24622479247368194",
+  "name": "FetchOIDCState",
+  "type": "query",
+  "input": null,
+  "output": {
+    "type": "object",
+    "properties": {
+      "xfb_wa_biz_get_oidc_state": {
+        "type": "scalar"
+      }
+    }
+  }
+}

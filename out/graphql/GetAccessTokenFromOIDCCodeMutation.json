@@ -1,0 +1,32 @@
+{
+  "id": "25278212845117908",
+  "name": "GetAccessTokenFromOIDCCode",
+  "type": "mutation",
+  "input": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "scalar"
+      },
+      "state": {
+        "type": "scalar"
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "xfb_wa_biz_get_token_from_oidc_code": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "scalar"
+          },
+          "fb_user_id": {
+            "type": "scalar"
+          }
+        }
+      }
+    }
+  }
+}
