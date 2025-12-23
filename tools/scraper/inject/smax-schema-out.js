@@ -28,7 +28,7 @@ const WAWapTypes = {
     CALL_JID: "JID",
     NEWSLETTER_JID: "JID",
     TO_WAP_JID: "JID",
-    generateId: "STANZA_ID",
+    generateId: "id",
     STANZA_ID: "STANZA_ID",
     CUSTOM_STRING: "STRING",
     CALL_ID: "STRING",
@@ -37,48 +37,60 @@ const WAWapTypes = {
     LONG_INT: "NUMBER",
 };
 
-const TypeHints = {
-    JID: "123456789@s.watsapp.net",
+const Placeholder = {
     STANZA_ID: "123.12456-789",
     STRING: "placeholder",
-    NUMBER: 12345,
+    NUMBER: 123456789,
     ARRAY: [],
     BOOLEAN: true,
+    BINARY: new Uint8Array(),
+    JID: {
+        DomainJid: "s.whatsapp.net",
+        UserJid: "123456789@s.whatsapp.net",
+        LidUserJid: "123456789@lid",
+        BroadcastJid: "123456789@broadcast",
+        DeviceJid: "123456789:1@s.whatsapp.net",
+        InteropDeviceJid: "12-3456789@interop",
+        CallJid: "123456789123456789@call",
+        GroupJid: "123456789@g.us",
+        StatusJid: "status@broadcast",
+        ChatJid: "123456789@s.whatsapp.net",
+        NewsletterJid: "123456789@newsletter",
+    },
 };
 
-const TypeMap = {
-    JID: "jid",
+const Types = {
+    JID: "JID",
     STANZA_ID: "id",
     STRING: "string",
     NUMBER: "number",
     BOOLEAN: "boolean",
-    BINARY: "binary"
+    BINARY: "binary",
 };
 
 function mergeStanzas(nodes) {
     return nodes.reduce((acc, node) => {
         const existentNode = acc.find(child => child.tag === node.tag);
 
-        if (existentNode) {
-            const mergedContent = (() => {
-                if (Array.isArray(existentNode.content) && Array.isArray(node.content))
-                    return mergeStanzas([...existentNode.content, ...node.content]);
-
-                return node.content || existentNode.content;
-            })();
-
-            Object.assign(existentNode, {
-                attrs: {
-                    ...existentNode.attrs || {},
-                    ...node.attrs || {},
-                },
-                content: mergedContent,
-            });
-
+        if (!existentNode) {
+            acc.push(node);
             return acc;
         }
 
-        acc.push(node);
+        const mergedContent = (() => {
+            if (Array.isArray(existentNode.content) && Array.isArray(node.content))
+                return mergeStanzas([...existentNode.content, ...node.content]);
+
+            return node.content || existentNode.content;
+        })();
+
+        Object.assign(existentNode, {
+            attrs: {
+                ...existentNode.attrs || {},
+                ...node.attrs || {},
+            },
+            content: mergedContent,
+        });
 
         return acc;
     }, []);
@@ -130,7 +142,7 @@ function createParamsPlaceholderProxy(hint, path = "") {
 
             if (propHint) {
                 if (propHint === "ARRAY") return [createParamsPlaceholderProxy(hint, propPath)];
-                return TypeHints[propHint];
+                return Placeholder[propHint];
             }
 
             return createParamsPlaceholderProxy(hint, propPath);
@@ -225,86 +237,39 @@ function withParamsPlaceholder(callback, hint = new Map()) {
     }
 }
 
-function convertToSchema(stanza, name = "unknown") {
-    function processAttributes(attrs) {
-        if (!attrs) return {};
+function convertToSchema(stanza) {
+    const metadata = stanza[METADATA_SYMBOL] || {};
 
-        const attributes = {};
-
-        for (const [key, value] of Object.entries(attrs)) {
-            const metadata = value?.[METADATA_SYMBOL];
-
-            if (metadata?.type) {
-                attributes[key] = {
-                    type: TypeMap[metadata.type] || metadata.type.toLowerCase()
-                };
-            } else if (metadata?.literal) {
-                attributes[key] = {
-                    type: "literal",
-                    value: metadata.literal,
-                };
-            } else {
-                attributes[key] = {
-                    type: "literal",
-                    value: value,
-                };
-            }
-
-            if (metadata?.optional) {
-                attributes[key].optional = true;
-            }
-        }
-
-        return attributes;
-    }
-
-    function processChildren(content) {
-        if (!content || !Array.isArray(content)) return [];
-        if (content.length === 1 && content[0]?.recordHint) return { type: "raw" };
-
-        return content.map(child => {
-            const metadata = child?.[METADATA_SYMBOL];
-
-            const childSchema = {
-                tag: child.tag,
-                attributes: processAttributes(child.attrs),
-                children: processChildren(child.content),
-            };
-
-            if (metadata?.optional) {
-                childSchema.optional = true;
-            }
-
-            if (metadata?.min !== undefined || metadata?.max !== undefined) {
-                if (metadata.min !== undefined) childSchema.min = metadata.min;
-                if (metadata.max !== undefined) childSchema.max = metadata.max;
-            }
-
-            return childSchema;
-        });
-    }
-
-    return {
-        name,
+    const schema = {
         tag: stanza.tag,
-        attributes: processAttributes(stanza.attrs),
-        children: processChildren(stanza.content),
+        attributes: metadata.attrs || {},
+        content: Array.isArray(stanza.content) ?
+            stanza.content.map(child => convertToSchema(child)) :
+            metadata.content,
     };
+
+    if (metadata.children && Object.keys(metadata.children).length > 0) {
+        schema.children = metadata.children;
+    }
+
+    return schema;
 }
 
 const smaxMakeOutput = Object.keys(modulesMap)
     .filter(key => /^WASmaxOut.*Request$/i.test(key))
     .map(moduleName => {
-        const exports = require(moduleName);
+        const module = require(moduleName);
+        const moduleKeys = Object.keys(module);
+
         const cleanName = moduleName.replace(/^WASmaxOut|Request$/g, "");
-        const makeKey = Object.keys(exports).find(key => moduleName.endsWith(key.replace("make", "")));
+        const makeKey = moduleKeys.find(key => moduleName.endsWith(key.replace("make", "")));
 
         return {
             name: cleanName,
             make: exports[makeKey],
         };
     })
-    .filter(e => e.make);
+    .filter(mod => mod.make);
 
 const schemas = withMockedModules(() => {
     console.clear();
@@ -313,7 +278,7 @@ const schemas = withMockedModules(() => {
 
     for (const { name, make } of smaxMakeOutput) {
         const stanza = withParamsPlaceholder(make);
-        const schema = convertToSchema(stanza, name);
+        const schema = convertToSchema(stanza);
 
         schemaSpecs[name] = schema;
     }

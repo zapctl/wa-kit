@@ -6,27 +6,25 @@ const WASmaxParseReference = require("WASmaxParseReference");
 const METADATA_SYMBOL = Symbol("metadata");
 
 const Placeholder = {
-    JID: "123456789@s.whatsapp.net",
     STANZA_ID: "123.12456-789",
     STRING: "placeholder",
-    NUMBER_STRING: "1234567890",
+    NUMBER: 123456789,
     ARRAY: [],
     BOOLEAN: true,
     BINARY: new Uint8Array(),
-};
-
-const JIDPlaceholder = {
-    DomainJid: "s.whatsapp.net",
-    UserJid: "123456789@s.whatsapp.net",
-    LidUserJid: "123456789@lid",
-    BroadcastJid: "123456789@broadcast",
-    DeviceJid: "123456789:1@s.whatsapp.net",
-    InteropDeviceJid: "12-3456789@interop",
-    CallJid: "123456789123456789@call",
-    GroupJid: "123456789@g.us",
-    StatusJid: "status@broadcast",
-    ChatJid: "123456789@s.whatsapp.net",
-    NewsletterJid: "123456789@newsletter",
+    JID: {
+        DomainJid: "s.whatsapp.net",
+        UserJid: "123456789@s.whatsapp.net",
+        LidUserJid: "123456789@lid",
+        BroadcastJid: "123456789@broadcast",
+        DeviceJid: "123456789:1@s.whatsapp.net",
+        InteropDeviceJid: "12-3456789@interop",
+        CallJid: "123456789123456789@call",
+        GroupJid: "123456789@g.us",
+        StatusJid: "status@broadcast",
+        ChatJid: "123456789@s.whatsapp.net",
+        NewsletterJid: "123456789@newsletter",
+    },
 };
 
 const Types = {
@@ -34,7 +32,6 @@ const Types = {
     STANZA_ID: "id",
     STRING: "string",
     NUMBER: "number",
-    NUMBER_STRING: "number",
     BOOLEAN: "boolean",
     BINARY: "binary",
 };
@@ -47,7 +44,7 @@ function getValueFromMetadata(metadata) {
             if (metadata.enum) return metadata.enum[0];
             return Placeholder.STRING;
         case Types.NUMBER:
-            return Placeholder.NUMBER_STRING;
+            return Placeholder.NUMBER;
         case Types.BOOLEAN:
             return Placeholder.BOOLEAN;
         case Types.BINARY:
@@ -55,10 +52,8 @@ function getValueFromMetadata(metadata) {
         case Types.STANZA_ID:
             return Placeholder.STANZA_ID;
         case Types.JID:
-            if (metadata.jidTypes?.length > 0) {
-                return JIDPlaceholder[metadata.jidTypes[0]];
-            }
-            return Placeholder.JID;
+            return Placeholder.JID[metadata.jidTypes[0]] ||
+                Placeholder.JID.DomainJid;
         default:
             return undefined;
     }
@@ -75,7 +70,7 @@ function assignAttr(node, attrName, attrMetadata) {
     const mergedMetadata = { ...attrMetadata, ...existingMetadata };
 
     attrsMetadata[attrName] = mergedMetadata;
-    node.attrs[attrName] = getValueFromMetadata(mergedMetadata);
+    node.attrs[attrName] = String(getValueFromMetadata(mergedMetadata));
 
     return Object.defineProperty(node, METADATA_SYMBOL, {
         value: { ...nodeMetadata, attrs: attrsMetadata },
@@ -368,7 +363,6 @@ function convertToSchema(stanza) {
             metadata.content,
     };
 
-    // Adiciona metadados dos children se existirem
     if (metadata.children && Object.keys(metadata.children).length > 0) {
         schema.children = metadata.children;
     }
