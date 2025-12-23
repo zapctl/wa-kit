@@ -125,7 +125,7 @@ function createModuleMetadataProxy(targetModule) {
                     return (typeFactory, node, attrName, literal) => {
                         assignAttr(node, attrName, {
                             type: typeof literal,
-                            literal,
+                            literal: literal !== Placeholder.STRING ? literal : undefined,
                         });
 
                         return originalValue(typeFactory, node, attrName, literal);
@@ -142,7 +142,7 @@ function createModuleMetadataProxy(targetModule) {
                     return (typeFactory, node, attrName, literal) => {
                         assignAttr(node, attrName, {
                             type: typeof literal,
-                            literal,
+                            literal: literal !== Placeholder.STRING ? literal : undefined,
                             optional: true,
                         });
 
@@ -214,7 +214,6 @@ function createModuleMetadataProxy(targetModule) {
 
                 case "attrStringEnum":
                     return (node, attrName, enumObj) => {
-                        if (!enumObj) debugger
                         assignAttr(node, attrName, {
                             type: Types.STRING,
                             enum: Object.values(enumObj),
@@ -389,11 +388,15 @@ const schemas = withMockedModules(() => {
 
     const schemaSpecs = {};
 
-    // WASmaxInChatstateStateSource pode chamar parseFromUserMixin ou parseFromGroupMixin, porem sempre irá capturar apenas um
+    // require("WASmaxInChatstateStateSource").parseStateSource pode chamar parseFromUserMixin ou parseFromGroupMixin, porem sempre irá capturar apenas um
+
+    // console.log(withParamsPlaceholder(
+    //     require("WASmaxInAbPropsGetExperimentConfigResponseSuccess")
+    //         .parseGetExperimentConfigResponseSuccess));
 
     console.log(withParamsPlaceholder(
-        require("WASmaxInAbPropsGetExperimentConfigResponseSuccess")
-            .parseGetExperimentConfigResponseSuccess));
+        require("WASmaxInChatstateStateSource")
+            .parseStateSource));
 
     // for (const { name, parse } of smaxParseInput) {
     //     const stanza = withParamsPlaceholder(parse);
