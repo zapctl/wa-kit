@@ -210,6 +210,22 @@ function createModuleMetadataProxy(targetModule) {
                         return originalValue(typeFactory, node, attrName, literal);
                     }
 
+                case "attrFromReference":
+                case "attrStringFromReference":
+                case "optionalAttrFromReference":
+                    return (...props) => {
+                        const node = props.find(node => node.tag);
+                        const attrNamePath = props.find(Array.isArray);
+
+                        if (node && attrNamePath.length === 1) {
+                            assignAttr(node, attrNamePath[0], {
+                                reference: true,
+                            });
+                        }
+
+                        return originalValue(...props);
+                    }
+
                 case "attrJidEnum":
                     return (node, attrName, enumValidator) => {
                         const jidTypes = enumValidator.typeName.split("|");
@@ -436,13 +452,65 @@ function withParamsPlaceholder(callback) {
     return proxy;
 }
 
+function mergeStanzas(nodes) {
+    return nodes.reduce((acc, node) => {
+        const existentNode = acc.find(child => child.tag === node.tag);
+
+        if (!existentNode) {
+            acc.push(node);
+            return acc;
+        }
+
+        const existingMetadata = existentNode[METADATA_SYMBOL] || {};
+        const nodeMetadata = node[METADATA_SYMBOL] || {};
+
+        const mergedAttrs = {
+            ...existentNode.attrs || {},
+            ...node.attrs || {},
+        };
+
+        const mergedContent = (() => {
+            if (Array.isArray(existentNode.content) && Array.isArray(node.content))
+                return mergeStanzas([...existentNode.content, ...node.content]);
+
+            return node.content || existentNode.content;
+        })();
+
+        const mergedMetadata = {
+            attrs: {
+                ...existingMetadata.attrs || {},
+                ...nodeMetadata.attrs || {},
+            },
+            content: {
+                ...existingMetadata.content || {},
+                ...nodeMetadata.content || {},
+            },
+        }
+
+        Object.assign(existentNode, {
+            attrs: mergedAttrs,
+            content: mergedContent,
+        });
+
+        Object.defineProperty(existentNode, METADATA_SYMBOL, {
+            value: mergedMetadata,
+            configurable: false,
+            enumerable: false,
+            writable: false,
+        });
+
+        return acc;
+    }, []);
+}
+
 function convertToSchema(stanza) {
     const metadata = stanza[METADATA_SYMBOL] || {};
 
     if (metadata.unions) {
         if (metadata.unions.length === 1) {
-            debugger;
-            return convertToSchema(metadata.unions[0]);
+            stanza = mergeStanzas([stanza, metadata.unions[0]])[0];
+
+            return convertToSchema(stanza);
         }
 
         return {

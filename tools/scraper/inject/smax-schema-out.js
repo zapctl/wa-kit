@@ -84,12 +84,24 @@ function mergeStanzas(nodes) {
             return node.content || existentNode.content;
         })();
 
+        const mergedMetadata = {
+            ...existentNode[METADATA_SYMBOL] || {},
+            ...node[METADATA_SYMBOL] || {},
+        }
+
         Object.assign(existentNode, {
             attrs: {
                 ...existentNode.attrs || {},
                 ...node.attrs || {},
             },
             content: mergedContent,
+        });
+
+        Object.defineProperty(existentNode, METADATA_SYMBOL, {
+            value: mergedMetadata,
+            configurable: false,
+            enumerable: false,
+            writable: false,
         });
 
         return acc;
