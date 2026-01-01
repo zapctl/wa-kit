@@ -60,42 +60,42 @@ function getValueFromMetadata(metadata) {
     }
 }
 
-function assignAttr(node, attrName, attrMetadata) {
-    console.log("assignAttr", attrName, attrMetadata);
-
-    if (!node.attrs) node.attrs = {};
-
-    const nodeMetadata = node[METADATA_SYMBOL] || {};
-    const attrsMetadata = nodeMetadata.attrs || {};
-    const existingMetadata = attrsMetadata[attrName] || {};
-    const mergedMetadata = { ...attrMetadata, ...existingMetadata };
-
-    attrsMetadata[attrName] = mergedMetadata;
-    node.attrs[attrName] = String(getValueFromMetadata(mergedMetadata));
+function assignMetadata(node, metadata) {
+    const existingMetadata = node[METADATA_SYMBOL] || {};
+    const mergedMetadata = { ...existingMetadata, ...metadata };
 
     return Object.defineProperty(node, METADATA_SYMBOL, {
-        value: { ...nodeMetadata, attrs: attrsMetadata },
+        value: mergedMetadata,
         configurable: false,
         enumerable: false,
         writable: true,
     });
 }
 
+function assignAttr(node, attrName, metadata) {
+    console.log("assignAttr", attrName, metadata);
+
+    if (!node.attrs) node.attrs = {};
+
+    const attrsMetadata = node[METADATA_SYMBOL]?.attrs || {};
+    const existingAttrMetadata = attrsMetadata[attrName] || {};
+    const mergedAttrMetadata = { ...metadata, ...existingAttrMetadata };
+
+    attrsMetadata[attrName] = mergedAttrMetadata;
+    node.attrs[attrName] = String(getValueFromMetadata(mergedAttrMetadata));
+
+    return assignMetadata(node, { attrs: attrsMetadata });
+}
+
 function assignContent(node, contentMetadata) {
     console.log("assignContent", contentMetadata);
 
-    const nodeMetadata = node[METADATA_SYMBOL] || {};
-    const existingMetadata = nodeMetadata.content || {};
+    const existingMetadata = node[METADATA_SYMBOL]?.content || {};
     const mergedMetadata = { ...existingMetadata, ...contentMetadata };
 
     node.content = getValueFromMetadata(mergedMetadata);
 
-    return Object.defineProperty(node, METADATA_SYMBOL, {
-        value: { ...nodeMetadata, content: mergedMetadata },
-        configurable: false,
-        enumerable: false,
-        writable: true,
-    });
+    return assignMetadata(node, { content: mergedMetadata });
 }
 
 function assignUnion(node, union, returnValue) {
@@ -103,21 +103,13 @@ function assignUnion(node, union, returnValue) {
 
     const nodeMetadata = node[METADATA_SYMBOL] || {};
     const unions = nodeMetadata.unions || [];
-    const firstReturnValue = nodeMetadata.firstReturnValue || returnValue;
 
     unions.push(union);
+    if (!node.tag) node.tag = union.tag;
 
-    if (!node.tag) {
-        node.tag = union.tag;
-        node.attrs = union.attrs;
-        node.content = union.content;
-    }
-
-    return Object.defineProperty(node, METADATA_SYMBOL, {
-        value: { ...nodeMetadata, unions, firstReturnValue },
-        configurable: false,
-        enumerable: false,
-        writable: true,
+    return assignMetadata(node, {
+        unions,
+        firstReturnValue: nodeMetadata.firstReturnValue || returnValue,
     });
 }
 
@@ -396,11 +388,20 @@ function createMixinProxy(mixinModule) {
 
             const variantName = propertyName.replace("parse", "").replace("Mixin", "");
 
-            return function (node, ...rest) {
-                const proxy = { variantName };
-                const result = originalValue(proxy, ...rest);
+            console.log("handleMixin", mixinModule, variantName);
 
-                if (result && result.success === true && proxy.tag) {
+            return function (node, ...rest) {
+                const proxy = {};
+                const nodeHadTag = !!node.tag;
+
+                const result = originalValue(proxy, ...rest);
+                if (!result?.success) return result;
+
+                assignMetadata(node, { name: variantName });
+
+                const isUnionVariant = !nodeHadTag && proxy.tag;
+
+                if (isUnionVariant) {
                     assignUnion(node, proxy, result.value);
 
                     return {
@@ -408,6 +409,9 @@ function createMixinProxy(mixinModule) {
                         error: "Forced failure to capture all union variants"
                     };
                 }
+
+                node.tag = proxy.tag = node.tag || proxy.tag;
+                mergeStanzas([node, proxy]);
 
                 return result;
             };
@@ -477,6 +481,7 @@ function mergeStanzas(nodes) {
         })();
 
         const mergedMetadata = {
+            name: existingMetadata.name || nodeMetadata.name,
             attrs: {
                 ...existingMetadata.attrs || {},
                 ...nodeMetadata.attrs || {},
@@ -496,7 +501,7 @@ function mergeStanzas(nodes) {
             value: mergedMetadata,
             configurable: false,
             enumerable: false,
-            writable: false,
+            writable: true,
         });
 
         return acc;
@@ -508,7 +513,7 @@ function convertToSchema(stanza) {
 
     if (metadata.unions) {
         if (metadata.unions.length === 1) {
-            stanza = mergeStanzas([stanza, metadata.unions[0]])[0];
+            mergeStanzas([stanza, metadata.unions[0]]);
 
             return convertToSchema(stanza);
         }
@@ -521,16 +526,13 @@ function convertToSchema(stanza) {
 
     const schema = {
         type: "node",
+        name: metadata.name,
         tag: stanza.tag,
         attributes: metadata.attrs || {},
         content: Array.isArray(stanza.content) ?
             stanza.content.map(child => convertToSchema(child)) :
             metadata.content,
     };
-
-    if (stanza.variantName) {
-        schema.variantName = stanza.variantName;
-    }
 
     if (metadata.children && Object.keys(metadata.children).length > 0) {
         schema.children = metadata.children;
@@ -541,7 +543,8 @@ function convertToSchema(stanza) {
 
 const smaxParseInput = Object.keys(modulesMap)
     .filter(key => key.startsWith("WASmaxIn"))
-    .filter(key => !/Mixin|Error|(Errors|Enums|Types|Ids)$/.test(key))
+    // .filter(key => !/Mixin|Error|(Errors|Enums|Types|Ids)$/.test(key))
+    // .filter(key => !/(Errors|Enums|Types|Ids)$/.test(key))
     .map(moduleName => {
         const module = require(moduleName);
         const moduleKeys = Object.keys(module);
@@ -559,15 +562,15 @@ const schemas = withMockedModules(() => {
     const schemaSpecs = {};
 
     for (const { name, parse } of smaxParseInput) {
-        if (name !== "BizSettingsSetPrivacySettingResponseSuccess") continue;
+        // if (name !== "AbPropsConfigs") continue;
 
         const stanza = withParamsPlaceholder(parse);
 
-        console.log(stanza);
         schemaSpecs[name] = convertToSchema(stanza);
     }
 
     return schemaSpecs;
 });
 
+// console.clear();
 console.log("SMaxInputSchemas", schemas);
