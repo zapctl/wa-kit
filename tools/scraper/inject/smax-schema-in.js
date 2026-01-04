@@ -458,11 +458,14 @@ function createMixinProxy(mixinModule, moduleName) {
                 const isUnion = !skipForcedMixinFailure.has(originalValue);
 
                 const result = originalValue(proxy, ...rest);
-                if (!result?.success) return result;
 
-                debugger
+                if (!result?.success) {
+                    if (result.mixin) skipForcedMixinFailure.add(result.mixin);
+                    return result;
+                }
+
                 node.tag = proxy.tag = node.tag || proxy.tag;
-                assignMetadata(proxy, { name });
+                assignMetadata(proxy, { name: name.variant });
 
                 if (!isUnion) {
                     mergeStanzas(node, proxy);
@@ -513,18 +516,23 @@ function withMockedModules(callback) {
 }
 
 function withParamsPlaceholder(callback) {
-    const proxy = {}
-    const result = callback(proxy, proxy);
+    while (true) {
+        const lastSkipSize = skipForcedMixinFailure.size;
 
-    if (!result.success && result.mixin) {
-        skipForcedMixinFailure.add(result.mixin);
-        return withParamsPlaceholder(callback);
+        const proxy = {};
+        const result = callback(proxy, proxy);
+
+        if (!result.success && result.mixin) {
+            skipForcedMixinFailure.add(result.mixin);
+        }
+
+        if (skipForcedMixinFailure.size === lastSkipSize) {
+            skipForcedMixinFailure.clear();
+
+            if (result.error) throw new Error(result.error);
+            return proxy;
+        }
     }
-
-    skipForcedMixinFailure.clear();
-
-    if (result.error) throw new Error(result.error);
-    return proxy;
 }
 
 function convertToSchema(stanza) {
@@ -542,23 +550,36 @@ function convertToSchema(stanza) {
 
         return {
             type: "union",
+            name: metadata.name,
             unions: metadata.unions.map(child => convertToSchema(child)),
-        }
+        };
     }
 
     const schema = {
         type: "node",
+        namespace: metadata.namespace,
         name: metadata.name,
         tag: stanza.tag,
-        attributes: metadata.attrs || {},
-        content: Array.isArray(stanza.content) ?
-            stanza.content.map(child => convertToSchema(child)) :
-            metadata.content,
+        attributes: metadata.attrs,
     };
 
-    if (metadata.children && Object.keys(metadata.children).length > 0) {
-        schema.children = metadata.children;
+    const contentMetadata = Object.keys(metadata.content || {}).length > 0 ?
+        metadata.content :
+        null;
+
+    if (Array.isArray(stanza.content)) {
+        const children = stanza.content.map(child => convertToSchema(child));
+
+        schema.content = contentMetadata ?
+            { ...contentMetadata, children } :
+            children;
+    } else {
+        schema.content = contentMetadata;
     }
+
+    Object.entries(schema).forEach(([key, val]) => {
+        if (val === undefined) delete schema[key];
+    });
 
     return schema;
 }
@@ -592,7 +613,10 @@ const schemas = withMockedModules(() => {
         const stanza = withParamsPlaceholder(parse);
         const stanzaName = createModuleName(name, parseName);
 
-        assignMetadata(stanza, { name: stanzaName });
+        assignMetadata(stanza, {
+            namespace: stanzaName.namespace,
+            name: stanzaName.variant,
+        });
 
         console.log(stanza)
         schemaSpecs[name] = convertToSchema(stanza);
