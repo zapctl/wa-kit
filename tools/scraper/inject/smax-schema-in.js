@@ -4,7 +4,7 @@ const WASmaxParseJid = require("WASmaxParseJid");
 const WASmaxParseReference = require("WASmaxParseReference");
 
 const METADATA_SYMBOL = Symbol("metadata");
-const FORCED_FAILURE_ERROR = "Forced failure to capture all union variants";
+const skipForcedMixinFailure = new Set();
 
 const Placeholder = {
     STANZA_ID: "123.12456-789",
@@ -99,7 +99,7 @@ function assignContent(node, contentMetadata) {
     return assignMetadata(node, { content: mergedMetadata });
 }
 
-function assignUnion(node, union, returnValue) {
+function assignUnion(node, union) {
     console.log("assignUnion", union);
 
     const nodeMetadata = node[METADATA_SYMBOL] || {};
@@ -108,10 +108,7 @@ function assignUnion(node, union, returnValue) {
     unions.push(union);
     if (!node.tag) node.tag = union.tag;
 
-    return assignMetadata(node, {
-        unions,
-        unionReturnValue: nodeMetadata.unionReturnValue || returnValue,
-    });
+    return assignMetadata(node, { unions });
 }
 
 function pushChild(node, tagName, childMetadata = {}) {
@@ -125,7 +122,7 @@ function pushChild(node, tagName, childMetadata = {}) {
     return assignContent(child, childMetadata);
 }
 
-function mergeStanzas(nodes) {
+function mergeStanzas(...nodes) {
     return nodes.reduce((acc, node) => {
         const existentNode = acc.find(child => child.tag === node.tag);
 
@@ -143,8 +140,15 @@ function mergeStanzas(nodes) {
         };
 
         const mergedContent = (() => {
-            if (Array.isArray(existentNode.content) && Array.isArray(node.content))
-                return mergeStanzas([...existentNode.content, ...node.content]);
+            if (
+                Array.isArray(existentNode.content) &&
+                Array.isArray(node.content)
+            ) {
+                return mergeStanzas(
+                    ...existentNode.content,
+                    ...node.content,
+                );
+            }
 
             return node.content || existentNode.content;
         })();
@@ -159,6 +163,10 @@ function mergeStanzas(nodes) {
                 ...existingMetadata.content || {},
                 ...nodeMetadata.content || {},
             },
+            unions: mergeStanzas(
+                ...existingMetadata.unions || [],
+                ...nodeMetadata.unions || [],
+            ),
         }
 
         Object.assign(existentNode, {
@@ -411,7 +419,7 @@ function createModuleMetadataProxy(targetModule) {
                 case "errorMixinDisjunction":
                     return (node, variantNames, results) => {
                         const nodeMetadata = node[METADATA_SYMBOL] || {};
-                        const returnValue = nodeMetadata.unionReturnValue;
+                        const returnValue = nodeMetadata.mixinReturnValue;
 
                         if (returnValue) return { success: true, value: returnValue };
                         else return originalValue(node, variantNames, results);
@@ -432,8 +440,6 @@ function createModuleName(moduleName, propertyName) {
     return { namespace, variant };
 }
 
-let skipNextForcedMixinFailure = false;
-
 function createMixinProxy(mixinModule, moduleName) {
     return new Proxy(mixinModule, {
         get(target, propertyName) {
@@ -449,20 +455,28 @@ function createMixinProxy(mixinModule, moduleName) {
 
             return function (node, ...rest) {
                 const proxy = {};
+                const isUnion = !skipForcedMixinFailure.has(originalValue);
 
                 const result = originalValue(proxy, ...rest);
                 if (!result?.success) return result;
 
+                debugger
+                node.tag = proxy.tag = node.tag || proxy.tag;
                 assignMetadata(proxy, { name });
-                assignUnion(node, proxy, result.value);
 
-                if (skipNextForcedMixinFailure) {
-                    skipNextForcedMixinFailure = false;
-                    debugger;
+                if (!isUnion) {
+                    mergeStanzas(node, proxy);
                     return result;
                 }
 
-                return { success: false, error: FORCED_FAILURE_ERROR };
+                assignUnion(node, proxy);
+                assignMetadata(node, { mixinReturnValue: result.value });
+
+                return {
+                    success: false,
+                    error: "Forced failure to capture all union variants",
+                    mixin: originalValue,
+                };
             };
         }
     });
@@ -502,20 +516,26 @@ function withParamsPlaceholder(callback) {
     const proxy = {}
     const result = callback(proxy, proxy);
 
-    if (result.success === false && result.error === FORCED_FAILURE_ERROR) {
-        skipNextForcedMixinFailure = true; // isso aqui é falho pois só corrige o primeiro mixin
+    if (!result.success && result.mixin) {
+        skipForcedMixinFailure.add(result.mixin);
         return withParamsPlaceholder(callback);
     }
 
+    skipForcedMixinFailure.clear();
+
+    if (result.error) throw new Error(result.error);
     return proxy;
 }
 
 function convertToSchema(stanza) {
     const metadata = stanza[METADATA_SYMBOL] || {};
 
-    if (metadata.unions) {
+    if (metadata.unions?.length > 0) {
         if (metadata.unions.length === 1) {
-            mergeStanzas([stanza, metadata.unions[0]]);
+            const union = metadata.unions[0];
+            delete metadata.unions;
+
+            mergeStanzas(stanza, union);
 
             return convertToSchema(stanza);
         }
