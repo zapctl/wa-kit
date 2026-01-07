@@ -1,5 +1,5 @@
 {
-  "id": "9587446314672913",
+  "id": "25347099718279209",
   "name": "MexGetUsernameJob",
   "type": "query",
   "input": null,
@@ -9,8 +9,19 @@
       "xwa2_username_get": {
         "type": "object",
         "properties": {
-          "username": {
-            "type": "scalar"
+          "username_info": {
+            "type": "object",
+            "properties": {
+              "username": {
+                "type": "scalar"
+              },
+              "state": {
+                "type": "scalar"
+              },
+              "pin": {
+                "type": "scalar"
+              }
+            }
           }
         }
       }
