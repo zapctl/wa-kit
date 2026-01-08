@@ -46,7 +46,8 @@
       "ButtonResponse": "button_response",
       "Order": "order",
       "Product": "product",
-      "NativeFlowResponse": "native_flow_response"
+      "NativeFlowResponse": "native_flow_response",
+      "GroupHistory": "group_history"
     }
   }
 }

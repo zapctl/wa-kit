@@ -1,5 +1,5 @@
 {
-  "id": "24088996777386308",
+  "id": "25246702401624388",
   "name": "MexFetchNewsletterReportsJob",
   "type": "query",
   "input": null,
@@ -52,6 +52,9 @@
                     "type": "scalar"
                   },
                   "report_id": {
+                    "type": "scalar"
+                  },
+                  "appeal_id": {
                     "type": "scalar"
                   }
                 }

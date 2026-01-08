@@ -1,0 +1,71 @@
+{
+  "id": "25188352884120072",
+  "name": "BizSetMerchantCompliance",
+  "type": "mutation",
+  "input": {
+    "type": "object",
+    "properties": {
+      "input": {
+        "type": "scalar"
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "xfb_whatsapp_biz_merchant_set_compliance_info": {
+        "type": "object",
+        "properties": {
+          "merchant_info": {
+            "type": "object",
+            "properties": {
+              "entity_name": {
+                "type": "scalar"
+              },
+              "entity_type": {
+                "type": "scalar"
+              },
+              "is_registered": {
+                "type": "scalar"
+              },
+              "entity_type_custom": {
+                "type": "scalar"
+              },
+              "customer_care_details": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "scalar"
+                  },
+                  "landline_number": {
+                    "type": "scalar"
+                  },
+                  "mobile_number": {
+                    "type": "scalar"
+                  }
+                }
+              },
+              "grievance_officer_details": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "scalar"
+                  },
+                  "email": {
+                    "type": "scalar"
+                  },
+                  "landline_number": {
+                    "type": "scalar"
+                  },
+                  "mobile_number": {
+                    "type": "scalar"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,266 @@
+{
+  "id": "25709331648706139",
+  "name": "MexFetchGroupInfoIncludBotsJob",
+  "type": "query",
+  "input": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "scalar"
+      },
+      "include_username": {
+        "type": "scalar"
+      },
+      "participants_phash": {
+        "type": "scalar"
+      },
+      "query_context": {
+        "type": "scalar"
+      },
+      "group_input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "scalar"
+          },
+          "participants_phash": {
+            "type": "scalar"
+          },
+          "query_context": {
+            "type": "scalar"
+          }
+        }
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "xwa2_group_query_by_id": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "scalar"
+          },
+          "creation_time": {
+            "type": "scalar"
+          },
+          "creator": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "scalar"
+              },
+              "lid": {
+                "type": "scalar"
+              },
+              "pn": {
+                "type": "scalar"
+              },
+              "username_info": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "scalar"
+                  }
+                },
+                "condition": {}
+              }
+            }
+          },
+          "state": {
+            "type": "scalar"
+          },
+          "subject": {
+            "type": "object",
+            "properties": {
+              "creator": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "scalar"
+                  },
+                  "lid": {
+                    "type": "scalar"
+                  },
+                  "pn": {
+                    "type": "scalar"
+                  },
+                  "username_info": {
+                    "type": "object",
+                    "properties": {
+                      "username": {
+                        "type": "scalar"
+                      }
+                    },
+                    "condition": {}
+                  }
+                }
+              },
+              "creation_time": {
+                "type": "scalar"
+              },
+              "value": {
+                "type": "scalar"
+              }
+            }
+          },
+          "description": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "scalar"
+              },
+              "creation_time": {
+                "type": "scalar"
+              },
+              "creator": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "scalar"
+                  },
+                  "lid": {
+                    "type": "scalar"
+                  },
+                  "pn": {
+                    "type": "scalar"
+                  },
+                  "username_info": {
+                    "type": "object",
+                    "properties": {
+                      "username": {
+                        "type": "scalar"
+                      }
+                    },
+                    "condition": {}
+                  }
+                }
+              },
+              "value": {
+                "type": "scalar"
+              }
+            }
+          },
+          "participants": {
+            "type": "object",
+            "properties": {
+              "edges": {
+                "type": "array",
+                "items": {
+                  "participant": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "scalar"
+                      },
+                      "lid": {
+                        "type": "scalar"
+                      },
+                      "pn": {
+                        "type": "scalar"
+                      },
+                      "display_name": {
+                        "type": "scalar"
+                      },
+                      "username_info": {
+                        "type": "object",
+                        "properties": {
+                          "username": {
+                            "type": "scalar"
+                          }
+                        }
+                      },
+                      "jid": {
+                        "type": "scalar"
+                      }
+                    }
+                  },
+                  "role": {
+                    "type": "scalar"
+                  }
+                }
+              },
+              "participants_phash_match": {
+                "type": "scalar"
+              }
+            }
+          },
+          "total_participants_count": {
+            "type": "scalar"
+          },
+          "missing_participant_identification": {
+            "type": "scalar"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "allow_admin_reports": {
+                "type": "scalar"
+              },
+              "announcement": {
+                "type": "scalar"
+              },
+              "capi": {
+                "type": "scalar"
+              },
+              "ephemeral": {
+                "type": "object",
+                "properties": {
+                  "expiration_time_in_sec": {
+                    "type": "scalar"
+                  }
+                }
+              },
+              "growth_locked2": {
+                "type": "object",
+                "properties": {
+                  "locked": {
+                    "type": "scalar"
+                  }
+                }
+              },
+              "lid_migration_state": {
+                "type": "object",
+                "properties": {
+                  "addressing_mode": {
+                    "type": "scalar"
+                  }
+                }
+              },
+              "locked": {
+                "type": "scalar"
+              },
+              "member_add_mode": {
+                "type": "scalar"
+              },
+              "member_link_mode": {
+                "type": "scalar"
+              },
+              "membership_approval_mode_enabled": {
+                "type": "scalar"
+              },
+              "support": {
+                "type": "scalar"
+              },
+              "group_safety_check": {
+                "type": "scalar"
+              },
+              "limit_sharing": {
+                "type": "object",
+                "properties": {
+                  "limit_sharing_enabled": {
+                    "type": "scalar"
+                  }
+                }
+              }
+            }
+          },
+          "membership_approval_request": {
+            "type": "scalar"
+          }
+        }
+      }
+    }
+  }
+}
