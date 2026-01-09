@@ -9,10 +9,7 @@ const skipForcedMixinFailure = new Set();
 const Placeholder = {
     STANZA_ID: "123.12456-789",
     STRING: "placeholder",
-    NUMBER: 123456789,
-    ARRAY: [],
     BOOLEAN: true,
-    BINARY: new Uint8Array(),
     JID: {
         DomainJid: "s.whatsapp.net",
         UserJid: "123456789@s.whatsapp.net",
@@ -29,24 +26,34 @@ const Placeholder = {
 };
 
 const Types = {
-    JID: "jid",
     STANZA_ID: "id",
     STRING: "string",
     NUMBER: "number",
     BOOLEAN: "boolean",
     BINARY: "binary",
+    JID: "jid",
     UNION: "union",
 };
 
 function getValueFromMetadata(metadata) {
-    if (metadata.literal) return metadata.literal;
+    if (metadata.binary) {
+        return new TextEncoder().encode(getValueFromMetadata({
+            ...metadata,
+            binary: undefined
+        }));
+    }
+    else if (metadata.literal) return metadata.literal;
+    else if (metadata.enum) return metadata.enum[0];
 
     switch (metadata.type) {
         case Types.STRING:
-            if (metadata.enum) return metadata.enum[0];
             return Placeholder.STRING;
-        case Types.NUMBER:
-            return Placeholder.NUMBER;
+        case Types.NUMBER: {
+            const min = metadata.min ?? 1;
+            const max = metadata.max ?? Number.MAX_SAFE_INTEGER;
+
+            return Math.random() * (max - min) + min;
+        }
         case Types.BOOLEAN:
             return Placeholder.BOOLEAN;
         case Types.BINARY:
@@ -59,6 +66,16 @@ function getValueFromMetadata(metadata) {
         default:
             return undefined;
     }
+}
+
+function mergeMetadata(oldMetadata, newMetadata) {
+    const mergedMetadata = { ...oldMetadata, ...newMetadata };
+
+    if (oldMetadata.type && newMetadata.type === "string") {
+        mergedMetadata.type = oldMetadata.type;
+    }
+
+    return mergedMetadata;
 }
 
 function assignMetadata(node, metadata) {
@@ -80,7 +97,7 @@ function assignAttr(node, attrName, metadata) {
 
     const attrsMetadata = node[METADATA_SYMBOL]?.attrs || {};
     const existingAttrMetadata = attrsMetadata[attrName] || {};
-    const mergedAttrMetadata = { ...metadata, ...existingAttrMetadata };
+    const mergedAttrMetadata = mergeMetadata(existingAttrMetadata, metadata);
 
     attrsMetadata[attrName] = mergedAttrMetadata;
     node.attrs[attrName] = String(getValueFromMetadata(mergedAttrMetadata));
@@ -88,11 +105,11 @@ function assignAttr(node, attrName, metadata) {
     return assignMetadata(node, { attrs: attrsMetadata });
 }
 
-function assignContent(node, contentMetadata) {
-    console.log("assignContent", contentMetadata);
+function assignContent(node, metadata) {
+    console.log("assignContent", metadata);
 
     const existingMetadata = node[METADATA_SYMBOL]?.content || {};
-    const mergedMetadata = { ...existingMetadata, ...contentMetadata };
+    const mergedMetadata = mergeMetadata(existingMetadata, metadata);
 
     node.content = getValueFromMetadata(mergedMetadata);
 
@@ -106,20 +123,23 @@ function assignUnion(node, union) {
     const unions = nodeMetadata.unions || [];
 
     unions.push(union);
-    if (!node.tag) node.tag = union.tag;
 
     return assignMetadata(node, { unions });
 }
 
-function pushChild(node, tagName, childMetadata = {}) {
-    console.log("pushChild", tagName);
+function pushChild(node, tagName, metadata = {}) {
+    console.log("pushChild", tagName, metadata);
 
-    const child = { tag: tagName, attrs: {}, content: null };
+    for (let i = 0; i < (metadata.min || 1); i++) {
+        const child = { tag: tagName, attrs: {}, content: null };
 
-    if (!node.content) node.content = [child];
-    else node.content.push(child);
+        if (!node.content) node.content = [child];
+        else node.content.push(child);
 
-    return assignContent(child, childMetadata);
+        assignContent(child, metadata);
+    }
+
+    return node;
 }
 
 function mergeStanzas(...nodes) {
@@ -363,7 +383,10 @@ function createModuleMetadataProxy(targetModule) {
 
                 case "contentInt":
                     return (node) => {
-                        assignContent(node, { type: Types.NUMBER });
+                        assignContent(node, {
+                            type: Types.NUMBER,
+                            binary: true,
+                        });
 
                         return originalValue(node);
                     }
@@ -383,6 +406,7 @@ function createModuleMetadataProxy(targetModule) {
                         assignContent(node, {
                             type: Types.STRING,
                             enum: Object.values(enumObj),
+                            binary: true,
                         });
 
                         return originalValue(node, enumObj);
@@ -411,7 +435,10 @@ function createModuleMetadataProxy(targetModule) {
 
                 case "contentString":
                     return (node) => {
-                        assignContent(node, { type: Types.STRING });
+                        assignContent(node, {
+                            type: Types.STRING,
+                            binary: true,
+                        });
 
                         return originalValue(node);
                     }
@@ -455,9 +482,8 @@ function createMixinProxy(mixinModule, moduleName) {
 
             return function (node, ...rest) {
                 const proxy = {};
-                const isUnion = !skipForcedMixinFailure.has(originalValue);
-
                 const result = originalValue(proxy, ...rest);
+                const isUnion = !skipForcedMixinFailure.has(originalValue);
 
                 if (!result?.success) {
                     if (result.mixin) skipForcedMixinFailure.add(result.mixin);
@@ -467,19 +493,19 @@ function createMixinProxy(mixinModule, moduleName) {
                 node.tag = proxy.tag = node.tag || proxy.tag;
                 assignMetadata(proxy, { name: name.variant });
 
-                if (!isUnion) {
+                if (isUnion) {
+                    assignUnion(node, proxy);
+                    assignMetadata(node, { mixinReturnValue: result.value });
+
+                    return {
+                        success: false,
+                        error: "Forced failure to capture all union variants",
+                        mixin: originalValue,
+                    };
+                } else {
                     mergeStanzas(node, proxy);
                     return result;
                 }
-
-                assignUnion(node, proxy);
-                assignMetadata(node, { mixinReturnValue: result.value });
-
-                return {
-                    success: false,
-                    error: "Forced failure to capture all union variants",
-                    mixin: originalValue,
-                };
             };
         }
     });
@@ -607,9 +633,10 @@ const schemas = withMockedModules(() => {
     for (const { name, parse, parseName } of smaxParseInput) {
         if (
             // name !== "BlocklistsBlocklistIds" &&
-            name !== "GroupsGetGroupProfilePicturesResponseSuccessGroupPictures"
+            name !== "ChatstateStateTypes"
         ) continue;
 
+        console.log(name)
         const stanza = withParamsPlaceholder(parse);
         const stanzaName = createModuleName(name, parseName);
 
@@ -618,7 +645,6 @@ const schemas = withMockedModules(() => {
             name: stanzaName.variant,
         });
 
-        console.log(stanza)
         schemaSpecs[name] = convertToSchema(stanza);
     }
 
