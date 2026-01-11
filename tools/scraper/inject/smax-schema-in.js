@@ -446,10 +446,9 @@ function createModuleMetadataProxy(targetModule) {
                 case "errorMixinDisjunction":
                     return (node, variantNames, results) => {
                         const nodeMetadata = node[METADATA_SYMBOL] || {};
-                        const returnValue = nodeMetadata.mixinReturnValue;
 
-                        if (returnValue) return { success: true, value: returnValue };
-                        else return originalValue(node, variantNames, results);
+                        return nodeMetadata.mixinReturn ||
+                            originalValue(node, variantNames, results);
                     }
 
                 default:
@@ -491,11 +490,15 @@ function createMixinProxy(mixinModule, moduleName) {
                 }
 
                 node.tag = proxy.tag = node.tag || proxy.tag;
-                assignMetadata(proxy, { name: name.variant });
+
+                assignMetadata(proxy, {
+                    namespace: name.namespace,
+                    name: name.variant,
+                });
 
                 if (isUnion) {
                     assignUnion(node, proxy);
-                    assignMetadata(node, { mixinReturnValue: result.value });
+                    assignMetadata(node, { mixinReturn: result });
 
                     return {
                         success: false,
@@ -576,6 +579,7 @@ function convertToSchema(stanza) {
 
         return {
             type: "union",
+            namespace: metadata.namespace,
             name: metadata.name,
             unions: metadata.unions.map(child => convertToSchema(child)),
         };
@@ -612,31 +616,29 @@ function convertToSchema(stanza) {
 
 const smaxParseInput = Object.keys(modulesMap)
     .filter(key => key.startsWith("WASmaxIn"))
-    // .filter(key => !/Mixin|Error|(Errors|Enums|Types|Ids)$/.test(key))
-    // .filter(key => !/(Errors|Enums|Types|Ids)$/.test(key))
     .map(moduleName => {
         const module = require(moduleName);
         const moduleKeys = Object.keys(module);
 
-        const cleanName = moduleName.replace(/^WASmaxIn|Mixin$/g, "");
+        const name = moduleName.replace(/^WASmaxIn|Mixin$/g, "");
         const parseName = moduleKeys.find(key => moduleName.endsWith(key.replace(/^parse/, "")));
 
-        return { name: cleanName, parse: module[parseName], parseName };
+        return { name, parseName, parse: module[parseName] };
     })
-    .filter(mod => mod.parse);
+    .filter(mod => mod.parse)
+    .sort((a, b) => a.name.localeCompare(b.name));
 
 const schemas = withMockedModules(() => {
     console.clear();
 
     const schemaSpecs = {};
 
-    for (const { name, parse, parseName } of smaxParseInput) {
-        if (
-            // name !== "BlocklistsBlocklistIds" &&
-            name !== "ChatstateStateTypes"
-        ) continue;
+    for (const { name, parseName, parse } of smaxParseInput) {
+        // if (
+        //     name !== "ChatstateServerNotificationRequest" &&
+        //     name !== "ChatstateStateTypes"
+        // ) continue;
 
-        console.log(name)
         const stanza = withParamsPlaceholder(parse);
         const stanzaName = createModuleName(name, parseName);
 
@@ -645,11 +647,12 @@ const schemas = withMockedModules(() => {
             name: stanzaName.variant,
         });
 
+        console.log(name, stanza)
         schemaSpecs[name] = convertToSchema(stanza);
     }
 
     return schemaSpecs;
 });
 
-// console.clear();
+console.clear();
 console.log("SMaxInputSchemas", schemas);

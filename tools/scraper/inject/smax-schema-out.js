@@ -278,7 +278,7 @@ const smaxMakeOutput = Object.keys(modulesMap)
 
         return {
             name: cleanName,
-            make: exports[makeKey],
+            make: module[makeKey],
         };
     })
     .filter(mod => mod.make);
