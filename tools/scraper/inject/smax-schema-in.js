@@ -174,6 +174,7 @@ function mergeStanzas(...nodes) {
         })();
 
         const mergedMetadata = {
+            namespace: existingMetadata.namespace || nodeMetadata.namespace,
             name: existingMetadata.name || nodeMetadata.name,
             attrs: {
                 ...existingMetadata.attrs || {},
