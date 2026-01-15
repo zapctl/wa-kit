@@ -115,6 +115,7 @@ message Message {
 	optional NewsletterFollowerInviteMessage newsletterFollowerInviteMessageV2 = 113;
 	optional PollResultSnapshotMessage pollResultSnapshotMessageV3 = 115;
 	optional FutureProofMessage newsletterAdminProfileMessage = 116;
+	optional FutureProofMessage newsletterAdminProfileMessageV2 = 117;
 
 	enum PollType {
 		POLL = 0;
