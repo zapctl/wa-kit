@@ -1,5 +1,5 @@
 {
-  "id": "30648342034781246",
+  "id": "25877334095205200",
   "name": "MexCreateReportAppealJob",
   "type": "mutation",
   "input": {
@@ -59,6 +59,9 @@
                 "type": "scalar"
               },
               "report_id": {
+                "type": "scalar"
+              },
+              "appeal_id": {
                 "type": "scalar"
               }
             }

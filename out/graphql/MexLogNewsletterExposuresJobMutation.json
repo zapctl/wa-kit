@@ -1,6 +1,6 @@
 {
-  "id": "29209687128675794",
-  "name": "MexLogNewsletterExposureJob",
+  "id": "25260800823586918",
+  "name": "MexLogNewsletterExposuresJob",
   "type": "mutation",
   "input": {
     "type": "object",
@@ -13,7 +13,7 @@
   "output": {
     "type": "object",
     "properties": {
-      "xwa2_newsletter_log_exposure": {
+      "xwa2_newsletter_log_exposures": {
         "type": "object",
         "properties": {}
       }
